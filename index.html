@@ -193,7 +193,7 @@
                 var target = tapscript.Tap.encodeScript(script);
                 var pubkey = "ab".repeat( 32 );
                 var [ tpubkey ] = tapscript.Tap.getPubKey(pubkey, { tree, target });
-                var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'testnet');
+                var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'regtest');
                 return {address, pubkey1, pubkey2, timelock, hash};
             }
             dealership[ "signContract" ] = (privkey, pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout) => {
@@ -227,6 +227,7 @@
                 var script = scripts[index];
                 var target = tapscript.Tap.encodeScript(script);
                 var pubkey = "ab".repeat( 32 );
+                console.log( index, scripts[ index ], pubkey, tree, target, scripts[ 0 ] );
                 var [ tpubkey, cblock ] = tapscript.Tap.getPubKey(pubkey, { tree, target });
                 var txdata = tapscript.Tx.create({
                   vin: [{
@@ -242,7 +243,10 @@
                   }],
                 });
                 var vin_to_sign = 0;
+                var sighash = tapscript.Signer.taproot.hash( txdata, vin_to_sign, {extension: target, pubkey: nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 )} ).hex;
                 var sig1 = tapscript.Signer.taproot.sign(privkey, txdata, vin_to_sign, { extension: target });
+                console.log( "txdata:", txdata );
+                console.log( "sig:", sig1.hex, "sighash:", sighash, "pubkey:", nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ) );
                 return sig1.hex;
             }
             dealership[ "settleContract" ] = async (privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, set_sequence_as_seller, disable_sequence) => {
@@ -275,6 +279,7 @@
                 var script = scripts[index];
                 var target = tapscript.Tap.encodeScript(script);
                 var pubkey = "ab".repeat( 32 );
+                console.log( index, scripts[ index ], pubkey, tree, target, scripts[ 0 ] );
                 var [ tpubkey, cblock ] = tapscript.Tap.getPubKey(pubkey, { tree, target });
                 var txdata = tapscript.Tx.create({
                   vin: [{
@@ -292,8 +297,9 @@
                 var vin_to_sign = 0;
                 // console.log( txdata, vin_to_sign, target, nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ) );
                 var sighash = tapscript.Signer.taproot.hash( txdata, vin_to_sign, {extension: target, pubkey: nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 )} ).hex;
-                // console.log( "sighash:", sighash );
                 var sig1 = tapscript.Signer.taproot.sign(privkey, txdata, vin_to_sign, { extension: target });
+                console.log( "txdata:", txdata );
+                console.log( "sig:", sig1.hex, "sighash:", sighash, "pubkey:", nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ) );
                 var sig_is_good = await nobleSecp256k1.schnorr.verify( sig1.hex, sighash, nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ) );
                 // console.log( "sig is good, right?", sig_is_good, sig1.hex, sighash, nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 ) );
                 txdata.vin[0].witness = [ sig1, script, cblock ];
@@ -362,7 +368,7 @@
                 var destino = dealership[ "seller_address" ];
                 var from_amount = 4_000;
                 var to_amount = from_amount - 500;
-                var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
+                var timelock = dealership[ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
                 var txid = dealership[ "buyer_txid" ];
                 var vout = dealership[ "buyer_vout" ];
@@ -507,17 +513,21 @@
                     $( '.procedure' ).append( hd );
                     var pg = document.createElement( "p" );
                     pg.innerText = dealership.buyers_contract.contract.address;
+                    console.log( 4000, dealership.buyers_contract.contract.address );
                     $( '.procedure' ).append( pg );
                     await dealership.waitSomeSeconds( 3 );
                     //await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "testnet/" );
                     //var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" );
-                    var txinfo = ["ab".repeat( 32 ), 0, 4000];
+                    var txid = prompt( "enter the txid" );
+                    var vout = prompt( "and the vout" );
+                    vout = Number( vout );
+                    var txinfo = [txid, vout, 4000];
+                    // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                     dealership[ "buyer_txid" ] = txinfo[ 0 ];
                     dealership[ "buyer_vout" ] = txinfo[ 1 ];
                     var some_bitcoin_address = "mkHS9ne12qx9pS9VojpwU5xtRd4T7X7ZUt";
                     dealership[ "buyer_address" ] = some_bitcoin_address;
                     var buyers_contract = dealership.buyers_contract.contract;
-                    console.log( 0, "buyers_contract", buyers_contract );
                     $( 'h2' ).remove();
                     $( 'p' ).remove();
                     var hd = document.createElement( "h2" );
@@ -543,13 +553,16 @@
                         var buyers_contract = buyers_contract;
                         var buyers_address = some_bitcoin_address;
                         // var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "testnet/" )
-                        var txinfo = ["ab".repeat( 32 ), 0, 4000];
+                        var txid = prompt( "enter the txid you just entered" );
+                        var vout = prompt( "and the vout you just entered" );
+                        vout = Number( vout );
+                        var txinfo = [txid, vout, 4000];
+                        // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                         if ( txinfo[ 2 ] != 4_000 ) return;
                         dealership[ "buyer_txid" ] = txinfo[ 0 ];
                         dealership[ "buyer_vout" ] = txinfo[ 1 ];
                         dealership[ "buyer_address" ] = buyers_address;
                         dealership.buyers_contract.contract = buyers_contract;
-                        console.log( buyers_contract, dealership.buyers_contract.contract );
                         await dealership.prepSeller( sellers_privkey );
                         $( 'h2' ).remove();
                         $( '.buy_utxo' ).style.display = "none";
@@ -557,12 +570,17 @@
                         hd.innerText = "ok you're the seller now, send 3000 sats to this address:";
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
+                        console.log( 3000, dealership.sellers_contract.contract.address );
                         pg.innerText = dealership.sellers_contract.contract.address;
                         $( '.procedure' ).append( pg );
                         await dealership.waitSomeSeconds( 3 );
                         //await dealership.loopTilAddressReceivesMoney( dealership.sellers_contract.contract.address, "testnet/" );
                         // var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.sellers_contract.contract.address, "testnet/" );
-                        var txinfo = ["ab".repeat( 32 ), 0, 4000];
+                        var txid = prompt( "enter the txid" );
+                        var vout = prompt( "and the vout" );
+                        vout = Number( vout );
+                        var txinfo = [txid, vout, 3000];
+                        // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                         dealership[ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "seller_vout" ] = txinfo[ 1 ];
                         var another_bitcoin_address = "miCsGRg9GTKWfKDPGUhQ2jf5srtD4e9M2Q";
@@ -588,7 +606,11 @@
                             var sellers_contract = info_for_buyer[ "sellers_contract" ];
                             var sellers_address = info_for_buyer[ "sellers_address" ];
                             // var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "testnet/" )
-                            var txinfo = ["ab".repeat( 32 ), 0, 3000];
+                            var txid = prompt( "enter the txid you just entered" );
+                            var vout = prompt( "and the vout you just entered" );
+                            vout = Number( vout );
+                            var txinfo = [txid, vout, 3000];
+                            // var txinfo = ["ab".repeat( 32 ), 0, 3000];
                             if ( txinfo[ 2 ] != 3_000 ) return;
                             dealership[ "seller_txid" ] = txinfo[ 0 ];
                             dealership[ "seller_vout" ] = txinfo[ 1 ];
