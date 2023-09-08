@@ -193,7 +193,7 @@
                 var target = tapscript.Tap.encodeScript(script);
                 var pubkey = "ab".repeat( 32 );
                 var [ tpubkey ] = tapscript.Tap.getPubKey(pubkey, { tree, target });
-                var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'regtest');
+                var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'testnet');
                 return {address, pubkey1, pubkey2, timelock, hash};
             }
             dealership[ "signContract" ] = (privkey, pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout) => {
@@ -517,12 +517,12 @@
                     console.log( 4000, dealership.buyers_contract.contract.address );
                     $( '.procedure' ).append( pg );
                     await dealership.waitSomeSeconds( 3 );
-                    //await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "testnet/" );
-                    //var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" );
-                    var txid = prompt( "enter the txid" );
-                    var vout = prompt( "and the vout" );
-                    vout = Number( vout );
-                    var txinfo = [txid, vout, 4000];
+                    await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "testnet/" );
+                    var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" );
+                    // var txid = prompt( "enter the txid" );
+                    // var vout = prompt( "and the vout" );
+                    // vout = Number( vout );
+                    // var txinfo = [txid, vout, 4000];
                     // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                     dealership[ "buyer_txid" ] = txinfo[ 0 ];
                     dealership[ "buyer_vout" ] = txinfo[ 1 ];
@@ -553,11 +553,11 @@
                         var buyers_address = info_for_seller[ "buyers_address" ];
                         var buyers_contract = buyers_contract;
                         var buyers_address = some_bitcoin_address;
-                        // var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "testnet/" )
-                        var txid = prompt( "enter the txid you just entered" );
-                        var vout = prompt( "and the vout you just entered" );
-                        vout = Number( vout );
-                        var txinfo = [txid, vout, 4000];
+                        var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "testnet/" )
+                        // var txid = prompt( "enter the txid you just entered" );
+                        // var vout = prompt( "and the vout you just entered" );
+                        // vout = Number( vout );
+                        // var txinfo = [txid, vout, 4000];
                         // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                         if ( txinfo[ 2 ] != 4_000 ) return;
                         dealership[ "buyer_txid" ] = txinfo[ 0 ];
@@ -575,12 +575,12 @@
                         pg.innerText = dealership.sellers_contract.contract.address;
                         $( '.procedure' ).append( pg );
                         await dealership.waitSomeSeconds( 3 );
-                        //await dealership.loopTilAddressReceivesMoney( dealership.sellers_contract.contract.address, "testnet/" );
-                        // var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.sellers_contract.contract.address, "testnet/" );
-                        var txid = prompt( "enter the txid" );
-                        var vout = prompt( "and the vout" );
-                        vout = Number( vout );
-                        var txinfo = [txid, vout, 3000];
+                        await dealership.loopTilAddressReceivesMoney( dealership.sellers_contract.contract.address, "testnet/" );
+                        var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.sellers_contract.contract.address, "testnet/" );
+                        // var txid = prompt( "enter the txid" );
+                        // var vout = prompt( "and the vout" );
+                        // vout = Number( vout );
+                        // var txinfo = [txid, vout, 3000];
                         // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                         dealership[ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "seller_vout" ] = txinfo[ 1 ];
@@ -606,11 +606,11 @@
                             var info_for_buyer = JSON.parse( sessionStorage[ "info_for_buyer" ] );
                             var sellers_contract = info_for_buyer[ "sellers_contract" ];
                             var sellers_address = info_for_buyer[ "sellers_address" ];
-                            // var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "testnet/" )
-                            var txid = prompt( "enter the txid you just entered" );
-                            var vout = prompt( "and the vout you just entered" );
-                            vout = Number( vout );
-                            var txinfo = [txid, vout, 3000];
+                            var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "testnet/" )
+                            // var txid = prompt( "enter the txid you just entered" );
+                            // var vout = prompt( "and the vout you just entered" );
+                            // vout = Number( vout );
+                            // var txinfo = [txid, vout, 3000];
                             // var txinfo = ["ab".repeat( 32 ), 0, 3000];
                             if ( txinfo[ 2 ] != 3_000 ) return;
                             dealership[ "seller_txid" ] = txinfo[ 0 ];
