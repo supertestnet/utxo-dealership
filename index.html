@@ -479,7 +479,8 @@
                 // var vout = 1;
                 // var sig2 = dealership.signContract(new_contract[ "privkey2" ], pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout);
                 var i_am_buyer = true;
-                return dealership.settleContract(privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true);
+                var txhex = await dealership.settleContract(privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true);
+                return txhex;
             }
         </script>
     </head>
@@ -648,13 +649,13 @@
                                 var btn5 = document.createElement( "button" );
                                 btn5.classList.add( "info_sent" );
                                 btn5.innerText = "click when the info is sent";
-                                sessionStorage[ "more_info_for_buyer" ] = JSON.stringify( {buyer_sig, buyer_preimage} );
+                                sessionStorage[ "more_info_for_buyer" ] = JSON.stringify( {seller_sig} );
                                 btn5.onclick = async e => {
                                     $( '.info_sent' ).remove();
                                     $( 'h2' ).remove();
                                     $( 'p' ).remove();
                                     var more_info_for_buyer = JSON.parse( sessionStorage[ "more_info_for_buyer" ] );
-                                    var seller_sig = more_info_for_seller[ "seller_sig" ];
+                                    var seller_sig = more_info_for_buyer[ "seller_sig" ];
                                     console.log( 'seller sig:', seller_sig );
                                     var txhex = await dealership.useMultisigAsBuyer( seller_sig );
                                     alert( `ok you're the buyer now -- broadcast this tx, then click ok:\n\n${txhex}` );
