@@ -474,36 +474,125 @@
     </head>
     <body>
         <h1>Utxo Dealership</h1>
+        <div class="procedure">
+            <h2>You are the seller -- click the button below</h2>
+            <button class="sell_utxo">Sell your new utxo</button>
+        </div>
+        <script>
+            $( '.sell_utxo' ).onclick = () => {
+                $( 'h2' ).remove();
+                $( '.sell_utxo' ).remove();
+                var sellers_privkey = dealership.getPrivateKey();
+                var sellers_pubkey = dealership.getPublicKey( sellers_privkey );
+                var hd = document.createElement( "h2" );
+                hd.innerText = "ok you're the buyer now -- click the button below";
+                $( '.procedure' ).append( hd );
+                var btn = document.createElement( "button" );
+                btn.classList.add( "buy_utxo" );
+                btn.innerText = "buy 3000 sats for 4000 sats";
+                btn.setAttribute( "data-pubkey", sellers_pubkey );
+                btn.setAttribute( "data-privkey", sellers_privkey );
+                btn.onclick = async e => {
+                    var sellers_pubkey = ( e.target.getAttribute( "data-pubkey" ) );
+                    await dealership.prepBuyer( sellers_pubkey );
+                    $( 'h2' ).remove();
+                    $( '.buy_utxo' ).style.display = "none";
+                    var hd = document.createElement( "h2" );
+                    hd.innerText = "ok send 4000 sats to this address:";
+                    $( '.procedure' ).append( hd );
+                    var pg = document.createElement( "p" );
+                    pg.innerText = dealership.buyers_contract.contract.address;
+                    $( '.procedure' ).append( pg );
+                    //await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "testnet/" );
+                    //var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" );
+                    var txinfo = ["ab".repeat( 32 ), 0, 4000];
+                    dealership[ "buyer_txid" ] = txinfo[ 0 ];
+                    dealership[ "buyer_vout" ] = txinfo[ 1 ];
+                    var some_bitcoin_address = "mkHS9ne12qx9pS9VojpwU5xtRd4T7X7ZUt";
+                    dealership[ "buyer_address" ] = some_bitcoin_address;
+                    var buyers_contract = dealership.buyers_contract.contract;
+                    console.log( 0, "buyers_contract", buyers_contract );
+                    $( 'h2' ).remove();
+                    $( 'p' ).remove();
+                    var hd = document.createElement( "h2" );
+                    hd.innerText = "ok send this to the seller:";
+                    $( '.procedure' ).append( hd );
+                    var pg = document.createElement( "p" );
+                    pg.innerText = JSON.stringify( {buyers_address: some_bitcoin_address, buyers_contract} );
+                    $( '.procedure' ).append( pg );
+                    var btn2 = document.createElement( "button" );
+                    btn2.classList.add( "info_sent" );
+                    btn2.innerText = "click when the info is sent";
+                    sessionStorage[ "info_for_seller" ] = JSON.stringify( {buyers_address: some_bitcoin_address, buyers_contract} );
+                    btn2.onclick = async e => {
+                        $( 'h2' ).remove();
+                        $( 'p' ).remove();
+                        var hd = document.createElement( "h2" );
+                        hd.innerText = "ok you're the seller now";
+                        $( '.procedure' ).append( hd );
+                        var info_for_seller = JSON.parse( sessionStorage[ "info_for_seller" ] );
+                        var buyers_contract = info_for_seller[ "buyers_contract" ];
+                        var buyers_address = info_for_seller[ "buyers_address" ];
+                        var buyers_contract = buyers_contract;
+                        var buyers_address = some_bitcoin_address;
+                        // var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "testnet/" )
+                        var txinfo = ["ab".repeat( 32 ), 0, 4000];
+                        if ( txinfo[ 2 ] != 4_000 ) return;
+                        dealership[ "buyer_txid" ] = txinfo[ 0 ];
+                        dealership[ "buyer_vout" ] = txinfo[ 1 ];
+                        dealership[ "buyer_address" ] = buyers_address;
+                        dealership.buyers_contract.contract = buyers_contract;
+                        console.log( buyers_contract, dealership.buyers_contract.contract );
+                        await dealership.prepSeller( sellers_privkey );
+                        $( 'h2' ).remove();
+                        $( '.buy_utxo' ).style.display = "none";
+                        var hd = document.createElement( "h2" );
+                        hd.innerText = "ok send 3000 sats to this address:";
+                        $( '.procedure' ).append( hd );
+                        var pg = document.createElement( "p" );
+                        pg.innerText = dealership.sellers_contract.contract.address;
+                        $( '.procedure' ).append( pg );
+                    }
+                    $( '.procedure' ).append( btn2 );
+                }
+                $( '.procedure' ).append( btn );
+            }
+        </script>
         <script>
             //PROCEDURE
 
-            //seller puts a pubkey on each offer
-            //buyer gets that pubkey and calls dealership.prepBuyer( sellers_pubkey )
+            //seller clicks "Sell your new utxo" and runs var sellers_privkey = dealership.getPrivateKey() and var sellers_pubkey = dealership.getPublicKey( sellers_privkey )
+            //seller makes sellers_pubkey a data-pubkey="" attribute of each offer button
+            //buyer gets sellers_pubkey when he selects an offer and calls dealership.prepBuyer( sellers_pubkey )
             //buyer sends 4_000 sats to dealership.buyers_contract.contract.address
             //buyer runs var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" )
-            //buyer runs dealership[ "buyer_txid" ] = txinfo[ 0 ];
-            //buyer runs dealership[ "buyer_vout" ] = txinfo[ 1 ];
+            //buyer runs dealership[ "buyer_txid" ] = txinfo[ 0 ]
+            //buyer runs dealership[ "buyer_vout" ] = txinfo[ 1 ]
             //buyer runs dealership[ "buyer_address" ] = some_bitcoin_address
             //buyer runs var buyers_contract = dealership.buyers_contract.contract
             //buyer sends the variables "buyers_contract" and "some_bitcoin_address" to seller
             //seller takes "buyers_contract" and "some_bitcoin_address" from buyer
-            //seller checks if 4_000 sats are confirmed in buyers_contract.address and fails if not
-            //seller runs dealership[ "buyer_txid" ] = txid
-            //seller runs dealership[ "buyer_vout" ] = vout
+            //seller runs var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "testnet/" )
+            //seller checks if txinfo[ 2 ] == 4_000 and fails if not
+            //seller runs dealership[ "buyer_txid" ] = txinfo[ 0 ]
+            //seller runs dealership[ "buyer_vout" ] = txinfo[ 1 ]
             //seller runs dealership[ "buyer_address" ] = some_bitcoin_address
             //seller runs dealership.buyers_contract.contract = buyers_contract
             //seller calls dealership.prepSeller( sellers_privkey )
+
             //seller sends 3_000 sats to dealership.sellers_contract.contract.address
-            //seller runs dealership[ "seller_txid" ] = txid
-            //seller runs dealership[ "seller_vout" ] = vout
+            //seller runs var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.sellers_contract.contract.address, "testnet/" )
+            //seller runs dealership[ "seller_txid" ] = txinfo[ 0 ]
+            //seller runs dealership[ "seller_vout" ] = txinfo[ 1 ]
             //seller runs dealership[ "seller_address" ] = another_bitcoin_address
             //seller runs var sellers_contract = dealership.sellers_contract.contract
             //seller sends the variables "sellers_contract" and another_bitcoin_address to buyer
             //buyer takes "sellers_contract" and another_bitcoin_address from seller
-            //buyer checks if 3_000 sats are confirmed in sellers_contract.address and fails if not
+            //buyer runs var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "testnet/" )
+            //seller checks if txinfo[ 2 ] == 3_000 and fails if not
             //if buyer fails he should run var txhex = await dealership.refundBuyer( destination ) and broadcast the tx after 10 blocks
-            //buyer runs dealership[ "seller_txid" ] = txid
-            //buyer runs dealership[ "seller_vout" ] = vout
+            //buyer runs dealership[ "seller_txid" ] = txinfo[ 0 ]
+            //buyer runs dealership[ "seller_vout" ] = txinfo[ 1 ]
             //buyer runs dealership[ "seller_address" ] = another_bitcoin_address
             //buyer runs dealership.sellers_contract.contract = sellers_contract
             //buyer runs var buyer_sig = await dealership.signContractAsBuyer()
