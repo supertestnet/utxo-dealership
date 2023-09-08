@@ -52,7 +52,7 @@
             var pubKey  = keypair.publicKey.toString( "hex" );
             pubKey      = pubKey.substring( 2 );
             console.log( pubKey );
-            var relay = "wss://nos.lol";
+            var relay = "wss://nostrue.com";
             var socket = new WebSocket( relay );
             socket.addEventListener('message', async function( message ) {
                 var [ type, subId, event ] = JSON.parse( message.data );
