@@ -93,7 +93,7 @@
                 let txid;
                 let vout;
                 let amt;
-                let nonjson = await getData("https://mempool.space/" + network + "api/address/" + address + "/txs");
+                let nonjson = await dealership.getData("https://mempool.space/" + network + "api/address/" + address + "/txs");
                 let json = JSON.parse(nonjson);
                 json.forEach(function (tx) {
                     tx["vout"].forEach(function (output, index) {
@@ -105,6 +105,41 @@
                     });
                 });
                 return [txid, vout, amt];
+            }
+            dealership[ "loopTilAddressReceivesMoney" ] = async (address, network) => {
+                let itReceivedMoney = false;
+                async function isDataSetYet(data_i_seek) {
+                    return new Promise(function (resolve, reject) {
+                        if (!data_i_seek) {
+                            setTimeout(async function () {
+                                console.log("waiting for address to receive money...");
+                                try {
+                                    itReceivedMoney = await dealership.addressOnceHadMoney(address, network);
+                                }catch(e){ }
+                                let msg = await isDataSetYet(itReceivedMoney);
+                                resolve(msg);
+                            }, 2000);
+                        } else {
+                            resolve(data_i_seek);
+                        }
+                    });
+                }
+
+                async function getTimeoutData() {
+                    let data_i_seek = await isDataSetYet(itReceivedMoney);
+                    return data_i_seek;
+                }
+
+                let returnable = await getTimeoutData();
+                return returnable;
+            }
+            dealership[ "addressOnceHadMoney" ] = async (address, network) => {
+                var nonjson = await dealership.getData( "https://mempool.space/" + network + "api/address/" + address );
+                var json = JSON.parse( nonjson );
+                if ( json[ "chain_stats" ][ "tx_count" ] > 0 || json[ "mempool_stats" ][ "tx_count" ] > 0 ) {
+                    return true;
+                }
+                return false;
             }
             dealership[ "makeContract" ] = async (pubkey2, pubkey1, privkey2, hash, i_am_seller) => {
                 var timelock = 10;
@@ -279,7 +314,7 @@
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 0;
                 var destino = dealership[ "buyer_address" ];
-                var from_amount = 51_000;
+                var from_amount = 4_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -300,7 +335,7 @@
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 1;
                 var destino = dealership[ "seller_address" ];
-                var from_amount = 51_000;
+                var from_amount = 4_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -320,7 +355,7 @@
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
                 var destino = dealership[ "seller_address" ];
-                var from_amount = 51_000;
+                var from_amount = 4_000;
                 var to_amount = from_amount - 500;
                 var timelock = contract[ "contract" ][ "timelock" ];
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
@@ -336,7 +371,7 @@
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
                 var destino = dealership[ "seller_address" ];
-                var from_amount = 51_000;
+                var from_amount = 4_000;
                 var to_amount = from_amount - 500;
                 var timelock = contract[ "contract" ][ "timelock" ];
                 var preimage = null;
@@ -363,7 +398,7 @@
                 var pubkey2 = dealership[ "sellers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 0;
                 var destino = dealership[ "seller_address" ];
-                var from_amount = 50_000;
+                var from_amount = 3_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -385,7 +420,7 @@
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 1;
                 var destino = dealership[ "buyer_address" ];
-                var from_amount = 50_000;
+                var from_amount = 3_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -405,7 +440,7 @@
                 var pubkey2 = dealership[ "sellers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
                 var destino = dealership[ "buyer_address" ];
-                var from_amount = 50_000;
+                var from_amount = 3_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var hash = dealership[ "sellers_contract" ][ "contract" ][ "hash" ];
@@ -422,7 +457,7 @@
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
                 var destino = dealership[ "buyer_address" ];
-                var from_amount = 50_000;
+                var from_amount = 3_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var preimage = null;
@@ -444,27 +479,28 @@
 
             //seller puts a pubkey on each offer
             //buyer gets that pubkey and calls dealership.prepBuyer( sellers_pubkey )
-            //buyer sends 51_000 sats to dealership.buyers_contract.contract.address
-            //buyer runs dealership[ "buyer_txid" ] = txid
-            //buyer runs dealership[ "buyer_vout" ] = vout
+            //buyer sends 4_000 sats to dealership.buyers_contract.contract.address
+            //buyer runs var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" )
+            //buyer runs dealership[ "buyer_txid" ] = txinfo[ 0 ];
+            //buyer runs dealership[ "buyer_vout" ] = txinfo[ 1 ];
             //buyer runs dealership[ "buyer_address" ] = some_bitcoin_address
             //buyer runs var buyers_contract = dealership.buyers_contract.contract
             //buyer sends the variables "buyers_contract" and "some_bitcoin_address" to seller
             //seller takes "buyers_contract" and "some_bitcoin_address" from buyer
-            //seller checks if 51_000 sats are confirmed in buyers_contract.address and fails if not
+            //seller checks if 4_000 sats are confirmed in buyers_contract.address and fails if not
             //seller runs dealership[ "buyer_txid" ] = txid
             //seller runs dealership[ "buyer_vout" ] = vout
             //seller runs dealership[ "buyer_address" ] = some_bitcoin_address
             //seller runs dealership.buyers_contract.contract = buyers_contract
             //seller calls dealership.prepSeller( sellers_privkey )
-            //seller sends 50_000 sats to dealership.sellers_contract.contract.address
+            //seller sends 3_000 sats to dealership.sellers_contract.contract.address
             //seller runs dealership[ "seller_txid" ] = txid
             //seller runs dealership[ "seller_vout" ] = vout
             //seller runs dealership[ "seller_address" ] = another_bitcoin_address
             //seller runs var sellers_contract = dealership.sellers_contract.contract
             //seller sends the variables "sellers_contract" and another_bitcoin_address to buyer
             //buyer takes "sellers_contract" and another_bitcoin_address from seller
-            //buyer checks if 50_000 sats are confirmed in sellers_contract.address and fails if not
+            //buyer checks if 3_000 sats are confirmed in sellers_contract.address and fails if not
             //if buyer fails he should run var txhex = await dealership.refundBuyer( destination ) and broadcast the tx after 10 blocks
             //buyer runs dealership[ "seller_txid" ] = txid
             //buyer runs dealership[ "seller_vout" ] = vout
