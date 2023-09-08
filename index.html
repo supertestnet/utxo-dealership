@@ -55,6 +55,57 @@
                     return hashHex;
                 });
             }
+            dealership[ "getPrivateKey" ] = () => {
+                return dealership.bytesToHex( nobleSecp256k1.utils.randomPrivateKey() );
+            }
+            dealership[ "getPublicKey" ] = privkey => {
+                return nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 );
+            }
+            dealership[ "getData" ] = async url => {
+                return new Promise( async function( resolve, reject ) {
+                    function inner_get( url ) {
+                        var xhttp = new XMLHttpRequest();
+                        xhttp.open( "GET", url, true );
+                        xhttp.send();
+                        return xhttp;
+                    }
+                    var data = inner_get( url );
+                    data.onerror = function( e ) {
+                        resolve( "error" );
+                    }
+                    async function isResponseReady() {
+                        return new Promise( function( resolve2, reject ) {
+                            if ( !data.responseText || data.readyState != 4 ) {
+                                setTimeout( async function() {
+                                    var msg = await isResponseReady();
+                                    resolve2( msg );
+                                }, 1 );
+                            } else {
+                                resolve2( data.responseText );
+                            }
+                        });
+                    }
+                    var returnable = await isResponseReady();
+                    resolve( returnable );
+                });
+            }
+            dealership[ "addressReceivedMoneyInThisTx" ] = async (address, network) => {
+                let txid;
+                let vout;
+                let amt;
+                let nonjson = await getData("https://mempool.space/" + network + "api/address/" + address + "/txs");
+                let json = JSON.parse(nonjson);
+                json.forEach(function (tx) {
+                    tx["vout"].forEach(function (output, index) {
+                        if (output["scriptpubkey_address"] == address) {
+                            txid = tx["txid"];
+                            vout = index;
+                            amt = output["value"];
+                        }
+                    });
+                });
+                return [txid, vout, amt];
+            }
             dealership[ "makeContract" ] = async (pubkey2, pubkey1, privkey2, hash, i_am_seller) => {
                 var timelock = 10;
                 var preimage = dealership.bytesToHex(nobleSecp256k1.utils.randomPrivateKey());
@@ -102,7 +153,7 @@
                 var target = tapscript.Tap.encodeScript(script);
                 var pubkey = "ab".repeat( 32 );
                 var [ tpubkey ] = tapscript.Tap.getPubKey(pubkey, { tree, target });
-                var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'regtest');
+                var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'testnet');
                 return {address, pubkey1, pubkey2, timelock, hash};
             }
             dealership[ "signContract" ] = (privkey, pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout) => {
