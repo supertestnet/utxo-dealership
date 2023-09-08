@@ -378,7 +378,7 @@
                 var destino = dealership[ "seller_address" ];
                 var from_amount = 4_000;
                 var to_amount = from_amount - 500;
-                var timelock = contract[ "contract" ][ "timelock" ];
+                var timelock = dealership[ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var preimage = null;
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
                 var txid = dealership[ "buyer_txid" ];
@@ -473,7 +473,7 @@
                 // var vout = 1;
                 // var sig2 = dealership.signContract(new_contract[ "privkey2" ], pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout);
                 var i_am_buyer = true;
-                dealership.settleContract(privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true);
+                return dealership.settleContract(privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true);
             }
         </script>
     </head>
@@ -602,6 +602,47 @@
                             var pg = document.createElement( "p" );
                             pg.innerText = JSON.stringify( {buyer_sig, buyer_preimage} );
                             $( '.procedure' ).append( pg );
+                            var btn4 = document.createElement( "button" );
+                            btn4.classList.add( "info_sent" );
+                            btn4.innerText = "click when the info is sent";
+                            sessionStorage[ "more_info_for_seller" ] = JSON.stringify( {buyer_sig, buyer_preimage} );
+                            btn4.onclick = async e => {
+                                $( '.info_sent' ).remove();
+                                $( 'h2' ).remove();
+                                $( 'p' ).remove();
+                                var more_info_for_seller = JSON.parse( sessionStorage[ "more_info_for_seller" ] );
+                                var hash = await dealership.sha256( dealership.hexToBytes( more_info_for_seller[ "buyer_preimage" ] ) );
+                                if ( hash != dealership.sellers_contract.contract.hash ) return;
+                                var buyer_sig = more_info_for_seller[ "buyer_sig" ];
+                                var txhex = await dealership.useMultisigAsSeller( dealership.sellers_contract.privkey2, buyer_sig );
+                                alert( `ok you're the seller now -- broadcast this tx, then click ok:\n\n${txhex}` );
+                                var seller_sig = await dealership.signContractAsSeller();
+                                var hd = document.createElement( "h2" );
+                                hd.innerText = "send this info to the buyer";
+                                $( '.procedure' ).append( hd );
+                                var pg = document.createElement( "p" );
+                                pg.innerText = JSON.stringify( {seller_sig} );
+                                $( '.procedure' ).append( pg );
+                                var btn5 = document.createElement( "button" );
+                                btn5.classList.add( "info_sent" );
+                                btn5.innerText = "click when the info is sent";
+                                sessionStorage[ "more_info_for_buyer" ] = JSON.stringify( {buyer_sig, buyer_preimage} );
+                                btn5.onclick = async e => {
+                                    $( '.info_sent' ).remove();
+                                    $( 'h2' ).remove();
+                                    $( 'p' ).remove();
+                                    var more_info_for_buyer = JSON.parse( sessionStorage[ "more_info_for_buyer" ] );
+                                    var seller_sig = more_info_for_seller[ "seller_sig" ];
+                                    console.log( 'seller sig:', seller_sig );
+                                    var txhex = await dealership.useMultisigAsBuyer( seller_sig );
+                                    alert( `ok you're the buyer now -- broadcast this tx, then click ok:\n\n${txhex}` );
+                                    var hd = document.createElement( "h2" );
+                                    hd.innerText = "you're done!";
+                                    $( '.procedure' ).append( hd );
+                                }
+                                $( '.procedure' ).append( btn5 );
+                            }
+                            $( '.procedure' ).append( btn4 );
                         }
                         $( '.procedure' ).append( btn3 );
                     }
@@ -648,13 +689,13 @@
             //buyer runs dealership.sellers_contract.contract = sellers_contract
             //buyer runs var buyer_sig = await dealership.signContractAsBuyer()
             //buyer runs var buyer_preimage = dealership.buyers_contract.preimage
-
             //buyer sends buyer_sig and buyer_preimage to seller
             //seller checks if buyer_preimage hashes to dealership.sellers_contract.contract.hash and fails if not
             //if seller fails he should run var txhex = await dealership.refundSeller() and broadcast the tx after 5 blocks
             //seller runs var txhex = await dealership.useMultisigAsSeller( dealership.sellers_contract.privkey2, buyer_sig ) and broadcasts the tx immediately
             //seller runs var seller_sig = await dealership.signContractAsSeller()
             //seller sends seller_sig to buyer
+
             //buyer runs var txhex = await dealership.useMultisigAsBuyer( seller_sig ) and broadcasts the tx immediately
         </script>
         <script>
