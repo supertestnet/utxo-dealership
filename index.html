@@ -210,24 +210,32 @@
                 if ( sig2 ) txdata.vin[0].witness = [ sig1, sig2, script, cblock ];
                 return tapscript.Tx.encode(txdata).hex;
             }
-            dealership[ "buyers_contract" ] = null;
-            dealership[ "sellers_contract" ] = null;
+            dealership[ "buyers_contract" ] = {}
+            dealership[ "sellers_contract" ] = {}
+            dealership[ "buyer_txid" ] = null;
+            dealership[ "buyer_vout" ] = null;
+            dealership[ "seller_txid" ] = null;
+            dealership[ "seller_vout" ] = null;
+            dealership[ "seller_address" ] = null;
+            dealership[ "buyer_address" ] = null;
             dealership[ "prepBuyer" ] = async pubkey2 => {
                 dealership[ "buyers_contract" ] = await dealership.makeContract( pubkey2 );
                 return true;
             }
-            dealership[ "refundBuyer" ] = async (destination, txid, vout) => {
+            dealership[ "refundBuyer" ] = async () => {
                 var privkey = dealership[ "buyers_contract" ][ "privkey1" ];
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 0;
-                var destino = destination;
-                var from_amount = 50_000;
+                var destino = dealership[ "buyer_address" ];
+                var from_amount = 51_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
                 var preimage = null;
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "buyer_txid" ];
+                var vout = dealership[ "buyer_vout" ];
                 // var txid = "a54b11cca36c1bb64704a9628499df008db7d8ec325a5eb1f9e4ab00c4dcc43a";
                 // var vout = 1;
                 var i_am_buyer = true;
@@ -235,49 +243,55 @@
                 return txhex;
                 // remember not to broadcast your tx til the timelock expires
             }
-            dealership[ "usePreimageAsSeller" ] = async (privkey, destination, txid, vout) => {
+            dealership[ "usePreimageAsSeller" ] = async privkey => {
                 // var privkey = privkey2;
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 1;
-                var destino = destination;
-                var from_amount = 50_000;
+                var destino = dealership[ "seller_address" ];
+                var from_amount = 51_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
                 var preimage = dealership[ "buyers_contract" ][ "preimage" ];
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "buyer_txid" ];
+                var vout = dealership[ "buyer_vout" ];
                 // var txid = "22be2c4c41cd659ad41d3d474c405ee65be284245dcd170884dbd3b28512f88f";
                 // var vout = 1;
                 var i_am_buyer = false;
                 var txhex = await dealership.settleContract(privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer);
                 return txhex;
             }
-            dealership[ "signContractAsBuyer" ] = (destination, txid, vout) => {
+            dealership[ "signContractAsBuyer" ] = () => {
                 var privkey = dealership[ "buyers_contract" ][ "privkey1" ];
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
-                var destino = destination;
-                var from_amount = 50_000;
+                var destino = dealership[ "seller_address" ];
+                var from_amount = 51_000;
                 var to_amount = from_amount - 500;
                 var timelock = contract[ "contract" ][ "timelock" ];
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "buyer_txid" ];
+                var vout = dealership[ "buyer_vout" ];
                 // var txid = "9f7482339a9cd2735fbd94bed214e80a1667b89ba92cde7bf8b2a9d2b06ae5b1";
                 // var vout = 1;
                 return dealership.signContract(privkey, pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout);
             }
-            dealership[ "useMultisigAsSeller" ] = async ( privkey, destination, txid, vout, sig2 ) => {
+            dealership[ "useMultisigAsSeller" ] = async ( privkey, sig2 ) => {
                 // var privkey = privkey2;
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
-                var destino = destination;
-                var from_amount = 50_000;
+                var destino = dealership[ "seller_address" ];
+                var from_amount = 51_000;
                 var to_amount = from_amount - 500;
                 var timelock = contract[ "contract" ][ "timelock" ];
                 var preimage = null;
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "buyer_txid" ];
+                var vout = dealership[ "buyer_vout" ];
                 // var txid = "9f7482339a9cd2735fbd94bed214e80a1667b89ba92cde7bf8b2a9d2b06ae5b1";
                 // var vout = 1;
                 // var sig2 = dealership.signContract(contract[ "privkey1" ], pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout);
@@ -292,18 +306,20 @@
                 dealership[ "sellers_contract" ] = await dealership.makeContract( pubkey2, pubkey1, privkey2, hash, true );
                 return true;
             }
-            dealership[ "refundSeller" ] = async (destination, txid, vout) => {
+            dealership[ "refundSeller" ] = async () => {
                 var privkey = dealership[ "sellers_contract" ][ "privkey2" ];
                 var pubkey1 = dealership[ "sellers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey2 = dealership[ "sellers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 0;
-                var destino = destination;
+                var destino = dealership[ "seller_address" ];
                 var from_amount = 50_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
                 var preimage = null;
                 var hash = dealership[ "sellers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "seller_txid" ];
+                var vout = dealership[ "seller_vout" ];
                 // var txid = "e766011e7249528ef5adcc433c8d1d60d698e834b038c0d41d3191168377c9be";
                 // var vout = 1;
                 var i_am_buyer = false;
@@ -311,51 +327,57 @@
                 return txhex;
                 // remember not to broadcast your tx til the timelock expires
             }
-            dealership[ "usePreimageAsBuyer" ] = async (destination, txid, vout) => {
+            dealership[ "usePreimageAsBuyer" ] = async () => {
                 var privkey = contract[ "privkey1" ];
                 //remember that the pubkeys are reversed in the next two lines
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 1;
-                var destino = destination;
+                var destino = dealership[ "buyer_address" ];
                 var from_amount = 50_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
                 var preimage = dealership[ "buyers_contract" ][ "preimage" ];
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "seller_txid" ];
+                var vout = dealership[ "seller_vout" ];
                 // var txid = "40e535afb7b0cc9dcef4c65ffae3e8a5ba1de63849c7bab3e829dbf62d88e50f";
                 // var vout = 1;
                 var i_am_buyer = true;
                 var txhex = await dealership.settleContract(privkey, pubkey1, pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true);
                 return txhex;
             }
-            dealership[ "signContractAsSeller" ] = (destination, txid, vout) => {
+            dealership[ "signContractAsSeller" ] = () => {
                 var privkey = dealership[ "sellers_contract" ][ "privkey2" ];
                 var pubkey1 = dealership[ "sellers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey2 = dealership[ "sellers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
-                var destino = destination;
+                var destino = dealership[ "buyer_address" ];
                 var from_amount = 50_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var hash = dealership[ "sellers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "seller_txid" ];
+                var vout = dealership[ "seller_vout" ];
                 // var txid = "9f7482339a9cd2735fbd94bed214e80a1667b89ba92cde7bf8b2a9d2b06ae5b1";
                 // var vout = 1;
                 return dealership.signContract(privkey, pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout);
             }
-            dealership[ "useMultisigAsBuyer" ] = async (destination, txid, vout, sig2) => {
+            dealership[ "useMultisigAsBuyer" ] = async sig2 => {
                 var privkey = dealership[ "buyers_contract" ][ "privkey1" ];
                 //remember that the pubkeys are reversed in the next two lines
                 var pubkey2 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey1" ];
                 var pubkey1 = dealership[ "buyers_contract" ][ "contract" ][ "pubkey2" ];
                 var index = 2;
-                var destino = destination;
+                var destino = dealership[ "buyer_address" ];
                 var from_amount = 50_000;
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var preimage = null;
                 var hash = dealership[ "buyers_contract" ][ "contract" ][ "hash" ];
+                var txid = dealership[ "seller_txid" ];
+                var vout = dealership[ "seller_vout" ];
                 // var txid = "072d8f21ebe6d74507331f843848e188eedbc7902f08ce18f50fc1e3b639b95a";
                 // var vout = 1;
                 // var sig2 = dealership.signContract(new_contract[ "privkey2" ], pubkey1, pubkey2, destino, from_amount, to_amount, timelock, hash, txid, vout);
@@ -366,6 +388,47 @@
     </head>
     <body>
         <h1>Utxo Dealership</h1>
+        <script>
+            //PROCEDURE
+
+            //seller puts a pubkey on each offer
+            //buyer gets that pubkey and call dealership.prepBuyer( sellers_pubkey )
+            //buyer sends 51_000 sats to dealership.buyers_contract.contract.address
+            //buyer runs dealership[ "buyer_txid" ] = txid
+            //buyer runs dealership[ "buyer_vout" ] = vout
+            //buyer runs dealership[ "buyer_address" ] = some_bitcoin_address
+            //buyer runs var buyers_contract = dealership.buyers_contract.contract
+            //buyer sends the variables "buyers_contract" and "some_bitcoin_address" to seller
+            //seller takes "buyers_contract" and "some_bitcoin_address" from buyer
+            //seller checks if 51_000 sats are confirmed in buyers_contract.address and fails if not
+            //seller runs dealership[ "buyer_txid" ] = txid
+            //seller runs dealership[ "buyer_vout" ] = vout
+            //seller runs dealership[ "buyer_address" ] = some_bitcoin_address
+            //seller runs dealership.buyers_contract.contract = buyers_contract
+            //seller calls dealership.prepSeller( sellers_privkey )
+            //seller sends 50_000 sats to dealership.sellers_contract.contract.address
+            //seller runs dealership[ "seller_txid" ] = txid
+            //seller runs dealership[ "seller_vout" ] = vout
+            //seller runs dealership[ "seller_address" ] = another_bitcoin_address
+            //seller runs var sellers_contract = dealership.sellers_contract.contract
+            //seller sends the variables "sellers_contract" and another_bitcoin_address to buyer
+            //buyer takes "sellers_contract" and another_bitcoin_address from seller
+            //buyer checks if 50_000 sats are confirmed in sellers_contract.address and fails if not
+            //if buyer fails he should run var txhex = await dealership.refundBuyer( destination ) and broadcast the tx after 10 blocks
+            //buyer runs dealership[ "seller_txid" ] = txid
+            //buyer runs dealership[ "seller_vout" ] = vout
+            //buyer runs dealership[ "seller_address" ] = another_bitcoin_address
+            //buyer runs dealership.sellers_contract.contract = sellers_contract
+            //buyer runs var buyer_sig = await dealership.signContractAsBuyer()
+            //buyer runs var buyer_preimage = dealership.buyers_contract.preimage
+            //buyer sends buyer_sig and buyer_preimage to seller
+            //seller checks if buyer_preimage hashes to dealership.sellers_contract.contract.hash and fails if not
+            //if seller fails he should run var txhex = await dealership.refundSeller() and broadcast the tx after 5 blocks
+            //seller runs var txhex = await dealership.useMultisigAsSeller( dealership.sellers_contract.privkey2, buyer_sig ) and broadcasts the tx immediately
+            //seller runs var seller_sig = await dealership.signContractAsSeller()
+            //seller sends seller_sig to buyer
+            //buyer runs var txhex = await dealership.useMultisigAsBuyer( seller_sig ) and broadcasts the tx immediately
+        </script>
         <script>
             //here is code for defining private keys and creating the buyer's htlc:
             // var privkey2 = dealership.bytesToHex(nobleSecp256k1.utils.randomPrivateKey());
