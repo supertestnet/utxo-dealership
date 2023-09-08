@@ -61,6 +61,11 @@
             dealership[ "getPublicKey" ] = privkey => {
                 return nobleSecp256k1.getPublicKey( privkey, true ).substring( 2 );
             }
+            dealership[ "waitSomeSeconds" ] = num => {
+                var num = num.toString() + "000";
+                num = Number( num );
+                return new Promise( resolve => setTimeout( resolve, num ) );
+            }
             dealership[ "getData" ] = async url => {
                 return new Promise( async function( resolve, reject ) {
                     function inner_get( url ) {
@@ -503,6 +508,7 @@
                     var pg = document.createElement( "p" );
                     pg.innerText = dealership.buyers_contract.contract.address;
                     $( '.procedure' ).append( pg );
+                    await dealership.waitSomeSeconds( 3 );
                     //await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "testnet/" );
                     //var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" );
                     var txinfo = ["ab".repeat( 32 ), 0, 4000];
@@ -547,7 +553,7 @@
                         $( 'h2' ).remove();
                         $( '.buy_utxo' ).style.display = "none";
                         var hd = document.createElement( "h2" );
-                        hd.innerText = "ok send 3000 sats to this address:";
+                        hd.innerText = "ok you're the seller now, send 3000 sats to this address:";
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
                         pg.innerText = dealership.sellers_contract.contract.address;
