@@ -151,6 +151,7 @@
                         if ( hash != dealership.sellers_contract.contract.hash ) return;
                         var buyer_sig = more_info_for_seller[ "buyer_sig" ];
                         var txhex = await dealership.useMultisigAsSeller( dealership.sellers_contract.privkey2, buyer_sig );
+                        console.log( "txhex:", txhex );
                         alert( `ok you're the seller now -- broadcast this tx, then click ok:\n\n${txhex}` );
                         var seller_sig = await dealership.signContractAsSeller();
                         var hd = document.createElement( "h2" );
@@ -176,6 +177,7 @@
                         var seller_sig = more_info_for_buyer[ "seller_sig" ];
                         console.log( 'seller sig:', seller_sig );
                         var txhex = await dealership.useMultisigAsBuyer( seller_sig );
+                        console.log( "txhex:", txhex );
                         alert( `ok you're the buyer now -- broadcast this tx, then click ok:\n\n${txhex}` );
                         // $( 'h2' ).remove();
                         var hd = document.createElement( "h2" );
@@ -242,9 +244,10 @@
                 console.log( "connected to " + relay );
                 var subId   = bitcoinjs.ECPair.makeRandom().privateKey.toString( "hex" ).substring( 0, 16 );
                 var filter  = { "#p": [ pubKey ] }
-                var filter2  = { kinds: [ 63582 ], limit: 1 }
+                // var filter2  = { kinds: [ 63582 ], limit: 1 }
                 var filter3  = { kinds: [ 63582 ], since: Math.floor( Date.now() / 1000 ) }
-                var subscription = [ "REQ", subId, filter, filter2, filter3 ];
+                // var subscription = [ "REQ", subId, filter, filter2, filter3 ];
+                var subscription = [ "REQ", subId, filter, filter3 ];
                 console.log('Subscription:', subscription);
                 socket.send(JSON.stringify( subscription ));
             });
