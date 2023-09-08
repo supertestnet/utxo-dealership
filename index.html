@@ -67,7 +67,8 @@
                         var buyers_contract = info_for_seller[ "buyers_contract" ];
                         var buyers_address = info_for_seller[ "buyers_address" ];
                         var buyers_contract = buyers_contract;
-                        var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "testnet/" )
+                        //change to testnet/
+                        var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "" )
                         // var txid = prompt( "enter the txid you just entered" );
                         // var vout = prompt( "and the vout you just entered" );
                         // vout = Number( vout );
@@ -90,8 +91,10 @@
                         pg.innerText = dealership.sellers_contract.contract.address;
                         $( '.procedure' ).append( pg );
                         await dealership.waitSomeSeconds( 3 );
-                        await dealership.loopTilAddressReceivesMoney( dealership.sellers_contract.contract.address, "testnet/" );
-                        var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.sellers_contract.contract.address, "testnet/" );
+                        //change to testnet/
+                        await dealership.loopTilAddressReceivesMoney( dealership.sellers_contract.contract.address, "" );
+                        //change to testnet/
+                        var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.sellers_contract.contract.address, "" );
                         // var txid = prompt( "enter the txid" );
                         // var vout = prompt( "and the vout" );
                         // vout = Number( vout );
@@ -121,7 +124,8 @@
                         var info_for_buyer = content[ "msg" ];
                         var sellers_contract = info_for_buyer[ "sellers_contract" ];
                         var sellers_address = info_for_buyer[ "sellers_address" ];
-                        var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "testnet/" )
+                        //change to testnet/
+                        var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "" )
                         // var txid = prompt( "enter the txid you just entered" );
                         // var vout = prompt( "and the vout you just entered" );
                         // vout = Number( vout );
@@ -201,8 +205,10 @@
                     console.log( 4000, dealership.buyers_contract.contract.address );
                     $( '.procedure' ).append( pg );
                     await dealership.waitSomeSeconds( 3 );
-                    await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "testnet/" );
-                    var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "testnet/" );
+                    //change to testnet/
+                    await dealership.loopTilAddressReceivesMoney( dealership.buyers_contract.contract.address, "" );
+                    //change to testnet/
+                    var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership.buyers_contract.contract.address, "" );
                     // var txid = prompt( "enter the txid" );
                     // var vout = prompt( "and the vout" );
                     // vout = Number( vout );
@@ -396,14 +402,14 @@
                 return returnable;
             }
             dealership[ "pushBTCpmt" ] = async( rawtx, network ) => {
-                var txid = await postData( "https://mempool.space/" + network + "api/tx", rawtx );
+                var txid = await postData( "https://mutinynet.com/" + network + "api/tx", rawtx );
                 return txid;
             }
             dealership[ "addressReceivedMoneyInThisTx" ] = async (address, network) => {
                 let txid;
                 let vout;
                 let amt;
-                let nonjson = await dealership.getData("https://mempool.space/" + network + "api/address/" + address + "/txs");
+                let nonjson = await dealership.getData("https://mutinynet.com/" + network + "api/address/" + address + "/txs");
                 let json = JSON.parse(nonjson);
                 json.forEach(function (tx) {
                     tx["vout"].forEach(function (output, index) {
@@ -444,7 +450,7 @@
                 return returnable;
             }
             dealership[ "addressOnceHadMoney" ] = async (address, network) => {
-                var nonjson = await dealership.getData( "https://mempool.space/" + network + "api/address/" + address );
+                var nonjson = await dealership.getData( "https://mutinynet.com/" + network + "api/address/" + address );
                 var json = JSON.parse( nonjson );
                 if ( json[ "chain_stats" ][ "tx_count" ] > 0 || json[ "mempool_stats" ][ "tx_count" ] > 0 ) {
                     return true;
