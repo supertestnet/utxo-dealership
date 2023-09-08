@@ -94,6 +94,46 @@
                     resolve( returnable );
                 });
             }
+            dealership[ "postData" ] = async (url, json, content_type = "", apikey = "") => {
+                var rtext = "";
+                function inner_post( url, json, content_type = "", apikey = "" ) {
+                    var xhttp = new XMLHttpRequest();
+                    xhttp.open( "POST", url, true );
+                    if ( content_type ) {
+                        xhttp.setRequestHeader( `Content-Type`, content_type );
+                    }
+                    if ( apikey ) {
+                        xhttp.setRequestHeader( `X-Api-Key`, apikey );
+                    }
+                    xhttp.send( json );
+                    return xhttp;
+                }
+                var data = inner_post( url, json, content_type, apikey );
+                data.onerror = function( e ) {
+                    rtext = "error";
+                }
+                async function isResponseReady() {
+                    return new Promise( function( resolve, reject ) {
+                        if ( rtext == "error" ) {
+                            resolve( rtext );
+                        }
+                        if ( !data.responseText || data.readyState != 4 ) {
+                            setTimeout( async function() {
+                                var msg = await isResponseReady();
+                                resolve( msg );
+                            }, 50 );
+                        } else {
+                            resolve( data.responseText );
+                        }
+                    });
+                }
+                var returnable = await isResponseReady();
+                return returnable;
+            }
+            dealership[ "pushBTCpmt" ] = async( rawtx, network ) => {
+                var txid = await postData( "https://mempool.space/" + network + "api/tx", rawtx );
+                return txid;
+            }
             dealership[ "addressReceivedMoneyInThisTx" ] = async (address, network) => {
                 let txid;
                 let vout;
