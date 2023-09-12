@@ -19,17 +19,17 @@ It should also incentivize miners to use pools that sell their utxos via this so
 
 # Upcoming features
 
-(1) release it on mainnet
+- [x] delink the swaps by avoiding pubkey reuse
 
-(2) allow custom amounts (currently it is hard coded to only let you buy 3000 "fresh sats" for 4000 "old sats")
+- [ ] allow custom amounts (currently it is hard coded to only let you buy 3000 "fresh sats" for 4000 "old sats")
 
-(3) allow custom destinations (currently the destination addresses for both the buyer and the seller are hard coded)
+- [ ] allow custom destinations (currently the destination addresses for both the buyer and the seller are hard coded)
 
-(4) delink the swaps by avoiding pubkey reuse
+- [ ] ensure that only "fresh sats" show up for sale (currently it is just a coinswap tool, there is no checking to ensure coinbase utxos are sold)
 
-(5) ensure that only "fresh sats" show up for sale (currently it is just a coinswap tool, there is no checking to ensure coinbase utxos are sold)
+- [ ] allow multiple simultaneous offers (currently only one offer can be made at a time)
 
-(6) allow multiple simultaneous offers (currently only one offer can be made at a time)
+- [ ] release it on mainnet
 
 # Version with a better ui
 
