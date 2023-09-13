@@ -29,7 +29,7 @@ It should also incentivize miners to use pools that sell their utxos via this so
 
 - [ ] ensure that only "fresh sats" show up for sale (currently it is just a coinswap tool, it doesn't ensure only coinbase utxos are sold)
 
-- [ ] add a "certified pre-owned" section where bitcoiners can buy coinjoined utxos
+- [ ] add a "certified pre-owned" section where bitcoiners can buy and sell coinjoined utxos
 
 - [ ] release it on mainnet
 
