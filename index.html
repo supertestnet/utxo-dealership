@@ -69,17 +69,20 @@
                         var buyers_contract = info_for_seller[ "buyers_contract" ];
                         var buyers_address = info_for_seller[ "buyers_address" ];
                         var buyers_contract = buyers_contract;
+                        var sell_amt = dealership[ "offers" ][ offer ][ "sell_amt" ];
+                        var sell_price = dealership[ "offers" ][ offer ][ "sell_price" ];
                         if ( $_GET[ "network" ] == "regtest" ) {
                             var txid = prompt( "enter the txid you just entered" );
                             var vout = prompt( "and the vout" );
                             vout = Number( vout );
-                            var txinfo = [txid, vout, 4000];
+                            var sell_price = dealership[ "offers" ][ offer ][ "sell_price" ];
+                            var txinfo = [txid, vout, sell_price];
                             // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                         } else {
                             //change to testnet/
                             var txinfo = await dealership.addressReceivedMoneyInThisTx( buyers_contract.address, "" )
                         }
-                        if ( txinfo[ 2 ] != 4_000 ) return;
+                        if ( txinfo[ 2 ] != sell_price ) return;
                         dealership[ "offers" ][ offer ][ "buyer_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "buyer_vout" ] = txinfo[ 1 ];
                         dealership[ "offers" ][ offer ][ "buyer_address" ] = buyers_address;
@@ -89,10 +92,10 @@
                         await dealership.prepSeller( sellers_privkey, second_sellers_privkey, offer );
                         $( 'h2' ).remove();
                         var hd = document.createElement( "h2" );
-                        hd.innerText = "ok you're the seller now, send 3000 sats to this address:";
+                        hd.innerText = `ok you're the seller now, send ${sell_amt} sats to this address:`;
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
-                        console.log( 3000, dealership[ "offers" ][ offer ].sellers_contract.contract.address );
+                        console.log( sell_amt, dealership[ "offers" ][ offer ].sellers_contract.contract.address );
                         pg.innerText = dealership[ "offers" ][ offer ].sellers_contract.contract.address;
                         $( '.procedure' ).append( pg );
                         await dealership.waitSomeSeconds( 3 );
@@ -100,7 +103,7 @@
                             var txid = prompt( "enter the txid" );
                             var vout = prompt( "and the vout" );
                             vout = Number( vout );
-                            var txinfo = [txid, vout, 3000];
+                            var txinfo = [txid, vout, sell_amt];
                             // var txinfo = ["ab".repeat( 32 ), 0, 3000];
                         } else {
                             //change to testnet/
@@ -131,17 +134,18 @@
                         var offer = info_for_buyer[ "offer" ];
                         var sellers_contract = info_for_buyer[ "sellers_contract" ];
                         var sellers_address = info_for_buyer[ "sellers_address" ];
+                        var sell_amt = dealership[ "offers" ][ offer ][ "sell_amt" ];
                         if ( $_GET[ "network" ] == "regtest" ) {
                             var txid = prompt( "enter the txid you just entered" );
                             var vout = prompt( "and the vout you just entered" );
                             vout = Number( vout );
-                            var txinfo = [txid, vout, 3000];
+                            var txinfo = [txid, vout, sell_amt];
                             // var txinfo = ["ab".repeat( 32 ), 0, 3000];
                         } else {
                             //change to testnet/
                             var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "" )
                         }
-                        if ( txinfo[ 2 ] != 3_000 ) return;
+                        if ( txinfo[ 2 ] != sell_amt ) return;
                         dealership[ "offers" ][ offer ][ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "seller_vout" ] = txinfo[ 1 ];
                         dealership[ "offers" ][ offer ][ "seller_address" ] = sellers_address;
@@ -200,7 +204,7 @@
                 if ( $( 'button' ) ) $( 'button' ).remove();
                 var btn = document.createElement( "button" );
                 btn.classList.add( "buy_utxo" );
-                btn.innerText = "buy 3000 sats for 4000 sats";
+                btn.innerText = `buy ${content[ "sell_amt" ]} sats for ${content[ "sell_price" ]} sats`;
                 btn.setAttribute( "data-offer", event.id );
                 btn.setAttribute( "data-pubkey", content.sellers_pubkey );
                 btn.setAttribute( "data-second_pubkey", content.second_sellers_pubkey );
@@ -210,6 +214,8 @@
                     dealership[ "offers" ][ offer ] = {}
                     dealership[ "offers" ][ offer ][ "buyers_contract" ] = {}
                     dealership[ "offers" ][ offer ][ "sellers_contract" ] = {}
+                    dealership[ "offers" ][ offer ][ "sell_amt" ] = content[ "sell_amt" ];
+                    dealership[ "offers" ][ offer ][ "sell_price" ] = content[ "sell_price" ];
                     dealership[ "offers" ][ offer ][ "buyer_txid" ] = null;
                     dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                     dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
@@ -222,18 +228,18 @@
                     $( 'h2' ).remove();
                     $( '.buy_utxo' ).style.display = "none";
                     var hd = document.createElement( "h2" );
-                    hd.innerText = "ok send 4000 sats to this address:";
+                    hd.innerText = `ok send ${content[ "sell_price" ]} sats to this address:`;
                     $( '.procedure' ).append( hd );
                     var pg = document.createElement( "p" );
                     pg.innerText = dealership[ "offers" ][ offer ].buyers_contract.contract.address;
-                    console.log( 4000, dealership[ "offers" ][ offer ].buyers_contract.contract.address );
+                    console.log( content[ "sell_price" ], dealership[ "offers" ][ offer ].buyers_contract.contract.address );
                     $( '.procedure' ).append( pg );
                     await dealership.waitSomeSeconds( 3 );
                     if ( $_GET[ "network" ] == "regtest" ) {
                         var txid = prompt( "enter the txid" );
                         var vout = prompt( "and the vout" );
                         vout = Number( vout );
-                        var txinfo = [txid, vout, 4000];
+                        var txinfo = [txid, vout, content[ "sell_price" ]];
                         // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                     } else {
                         //change to testnet/
@@ -249,7 +255,7 @@
                     $( 'h2' ).remove();
                     $( 'p' ).remove();
                     var hd = document.createElement( "h2" );
-                    hd.innerText = "waiting for the seller's okay";
+                    hd.innerText = "waiting for the seller's agreement";
                     $( '.procedure' ).append( hd );
                     var recipient = $( 'button' ).getAttribute( "data-nostrpub" );
                     setNostrNote( encrypt( privKey, recipient, JSON.stringify( {type: "accept", msg: {offer, buyers_address: some_bitcoin_address, buyers_contract}} ) ), recipient, relay );
@@ -623,7 +629,7 @@
                 var second_pubkey2 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey2" ];
                 var index = 0;
                 var destino = dealership[ "offers" ][ offer ][ "buyer_address" ];
-                var from_amount = 4_000;
+                var from_amount = dealership[ "offers" ][ offer ][ "sell_price" ];
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -643,7 +649,7 @@
                 var second_pubkey2 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey2" ];
                 var index = 1;
                 var destino = dealership[ "offers" ][ offer ][ "seller_address" ];
-                var from_amount = 4_000;
+                var from_amount = dealership[ "offers" ][ offer ][ "sell_price" ];
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -668,7 +674,7 @@
                 var second_pubkey1 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey1" ];
                 var second_pubkey2 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey2" ];
                 var destino = dealership[ "offers" ][ offer ][ "seller_address" ];
-                var from_amount = 4_000;
+                var from_amount = dealership[ "offers" ][ offer ][ "sell_price" ];
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "timelock" ];
                 var preimage = null;
@@ -729,7 +735,7 @@
                 var second_pubkey2 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey1" ];
                 var second_pubkey1 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey2" ];
                 var destino = dealership[ "offers" ][ offer ][ "buyer_address" ];
-                var from_amount = 3_000;
+                var from_amount = dealership[ "offers" ][ offer ][ "sell_amt" ];
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var preimage = null;
@@ -792,7 +798,7 @@
                 var second_pubkey2 = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "second_pubkey2" ];
                 var index = 0;
                 var destino = dealership[ "offers" ][ offer ][ "seller_address" ];
-                var from_amount = 3_000;
+                var from_amount = dealership[ "offers" ][ offer ][ "sell_amt" ];
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -813,7 +819,7 @@
                 var second_pubkey1 = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "second_pubkey2" ];
                 var index = 1;
                 var destino = dealership[ "offers" ][ offer ][ "buyer_address" ];
-                var from_amount = 3_000;
+                var from_amount = dealership[ "offers" ][ offer ][ "sell_amt" ];
                 var to_amount = from_amount - 500;
                 var timelock = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "timelock" ];
                 var sig2 = null;
@@ -831,29 +837,40 @@
         <h1>Utxo Dealership</h1>
         <div class="procedure">
             <h2>You are the seller -- click the button below</h2>
-            <button class="sell_utxo">Sell your new utxo</button>
+            <div class="selldiv">
+                <p>Please enter the value (in sats) of a coinbase utxo you want to sell</p>
+                <p><input class="sell_amt" type="number" min="546" step="1"></p>
+                <p>Please enter the total price (in sats) you want the buyer to pay for that utxo</p>
+                <p>e.g. for a 10% fee, if the utxo has 5000 sats, its price should be 5500 sats</p>
+                <p><input class="sell_price" type="number" min="546" step="1"></p>
+                <p><button class="sell_utxo">Sell your new utxo</button></p>
+            </div>
         </div>
         <script>
             if ( $_GET[ "user" ] == "buyer" ) {
                 $( 'h2' ).remove();
-                $( '.sell_utxo' ).remove();
+                $( '.selldiv' ).remove();
                 var hd = document.createElement( "h2" );
                 hd.innerText = "You are the buyer -- buy a new utxo";
                 $( '.procedure' ).append( hd );
             }
-            if ( $( '.sell_utxo' ) ) $( '.sell_utxo' ).onclick = async () => {
+            if ( $( '.selldiv' ) ) $( '.sell_utxo' ).onclick = async () => {
                 $( 'h2' ).remove();
-                $( '.sell_utxo' ).remove();
+                var sell_amt = Number( $( '.sell_amt' ).value );
+                var sell_price = Number( $( '.sell_price' ).value );
+                $( '.selldiv' ).remove();
                 var sellers_privkey = dealership.getPrivateKey();
                 var second_sellers_privkey = dealership.getPrivateKey();
                 var sellers_pubkey = dealership.getPublicKey( sellers_privkey );
                 var second_sellers_pubkey = dealership.getPublicKey( second_sellers_privkey );
-                var offer = await setNostrNote( JSON.stringify({sellers_pubkey, second_sellers_pubkey}), null, relay );
+                var offer = await setNostrNote( JSON.stringify({sellers_pubkey, second_sellers_pubkey, sell_amt, sell_price}), null, relay );
                 dealership[ "offers" ][ offer ] = {}
                 dealership[ "offers" ][ offer ][ "sellers_privkey" ] = sellers_privkey;
                 dealership[ "offers" ][ offer ][ "second_sellers_privkey" ] = second_sellers_privkey;
                 dealership[ "offers" ][ offer ][ "buyers_contract" ] = {}
                 dealership[ "offers" ][ offer ][ "sellers_contract" ] = {}
+                dealership[ "offers" ][ offer ][ "sell_amt" ] = sell_amt;
+                dealership[ "offers" ][ offer ][ "sell_price" ] = sell_price;
                 dealership[ "offers" ][ offer ][ "buyer_txid" ] = null;
                 dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                 dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
