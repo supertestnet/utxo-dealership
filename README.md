@@ -15,7 +15,7 @@ Click here to act as the "buyer" (i.e. someone who wants to buy bitcoins that ha
 
 UTXO dealership is a forthcoming privacy tool for bitcoin. It enables bitcoin miners to easily sell their freshly mined utxos for a premium, and it enables bitcoiners to acquire decent privacy simply by visiting a website and buying a history-free utxo. (It uses coinswaps, invented by bitcoin legend Gregory Maxwell, to prevent chain analysts from identifying the swap and linking the "old" utxo to the "new" one.) This project should also help increase miner revenues (because miners can sell their utxos for a premium), which should help improve bitcoin's security.
 
-It should also incentivize miners to use pools that sell their utxos via this software, because those pools will have higher revenues. In turn, this may disincentivize KYC'd mining pools -- who I imagine will not want to touch this software, despite its profitability -- who will thus lose members to non-KYC'd mining pools, who have no qualms about doing stuff without KYC, and therefore this software will (hopefully) increase the profitability, and thus the usage, of non-KYC'd mining pools.
+It should also incentivize miners to use pools that sell their utxos via this software, because those pools will have higher revenues. In turn, this may disincentivize KYC'd mining pools -- who I imagine will not want to touch this software, despite its profitability -- who will thus lose members to non-KYC'd mining pools, since non-KYC'd mining pools have no qualms about doing stuff without KYC. Therefore this software will (hopefully) increase the profitability, and thus the usage, of non-KYC'd mining pools, improving bitcoin's decentralization.
 
 # Upcoming features
 
