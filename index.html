@@ -116,8 +116,7 @@
                         }
                         dealership[ "offers" ][ offer ][ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "seller_vout" ] = txinfo[ 1 ];
-                        var another_bitcoin_address = "miCsGRg9GTKWfKDPGUhQ2jf5srtD4e9M2Q";
-                        dealership[ "offers" ][ offer ][ "seller_address" ] = another_bitcoin_address;
+                        var sellers_address = dealership[ "offers" ][ offer ][ "seller_address" ];
                         var sellers_contract = dealership[ "offers" ][ offer ].sellers_contract.contract;
                         $( 'h2' ).remove();
                         $( 'p' ).remove();
@@ -125,12 +124,12 @@
                         hd.innerText = "ok send this to the buyer:";
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
-                        pg.innerText = JSON.stringify( {sellers_address: another_bitcoin_address, sellers_contract} );
+                        pg.innerText = JSON.stringify({ sellers_address, sellers_contract });
                         $( '.procedure' ).append( pg );
                         var btn3 = document.createElement( "button" );
                         btn3.classList.add( "info_sent" );
                         btn3.innerText = "click when the info is sent";
-                        setNostrNote( encrypt( privKey, event.pubkey, JSON.stringify( {type: "info_for_buyer", msg: {offer, sellers_address: another_bitcoin_address, sellers_contract}} ) ), event.pubkey, relay );
+                        setNostrNote( encrypt( privKey, event.pubkey, JSON.stringify({ type: "info_for_buyer", msg: {offer, sellers_address, sellers_contract} }) ), event.pubkey, relay );
                     }
                     if ( content[ "type" ] == "info_for_buyer" ) {
                         var info_for_buyer = content[ "msg" ];
@@ -253,15 +252,15 @@
                     }
                     dealership[ "offers" ][ offer ][ "buyer_txid" ] = txinfo[ 0 ];
                     dealership[ "offers" ][ offer ][ "buyer_vout" ] = txinfo[ 1 ];
-                    var some_bitcoin_address = "mkHS9ne12qx9pS9VojpwU5xtRd4T7X7ZUt";
-                    dealership[ "offers" ][ offer ][ "buyer_address" ] = some_bitcoin_address;
+                    var buyers_address = prompt( "Please enter a bitcoin address where you want your new sats to go" );
+                    dealership[ "offers" ][ offer ][ "buyer_address" ] = buyers_address;
                     var buyers_contract = dealership[ "offers" ][ offer ].buyers_contract.contract;
                     $( 'h2' ).remove();
                     $( 'p' ).remove();
                     var hd = document.createElement( "h2" );
                     hd.innerText = "waiting for the seller's agreement";
                     $( '.procedure' ).append( hd );
-                    setNostrNote( encrypt( privKey, recipient, JSON.stringify( {type: "accept", msg: {offer, buyers_address: some_bitcoin_address, buyers_contract}} ) ), recipient, relay );
+                    setNostrNote( encrypt( privKey, recipient, JSON.stringify({ type: "accept", msg: {offer, buyers_address, buyers_contract} }) ), recipient, relay );
                 }
                 $( '.buydiv' ).append( btn );
             });
@@ -838,6 +837,8 @@
                 <p>Please enter the total price (in sats) you want to sell it for</p>
                 <p>e.g. to get 10% on a 5000 sat utxo, set its price to 5500 sats</p>
                 <p><input class="sell_price" type="number" min="546" step="1"></p>
+                <p>Please enter a bitcoin address where you want your earnings to go</p>
+                <p><input class="seller_address"></p>
                 <p><button class="sell_utxo">Sell your new utxo</button></p>
             </div>
             <div class="buydiv"></div>
@@ -852,6 +853,7 @@
             if ( $( '.selldiv' ) ) $( '.sell_utxo' ).onclick = async () => {
                 var sell_amt = Number( $( '.sell_amt' ).value );
                 var sell_price = Number( $( '.sell_price' ).value );
+                var seller_address = $( '.seller_address' ).value;
                 $( '.selldiv' ).remove();
                 var sellers_privkey = dealership.getPrivateKey();
                 var second_sellers_privkey = dealership.getPrivateKey();
@@ -869,7 +871,7 @@
                 dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                 dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
                 dealership[ "offers" ][ offer ][ "seller_vout" ] = null;
-                dealership[ "offers" ][ offer ][ "seller_address" ] = null;
+                dealership[ "offers" ][ offer ][ "seller_address" ] = seller_address;
                 dealership[ "offers" ][ offer ][ "buyer_address" ] = null;
                 var hd = document.createElement( "h2" );
                 hd.innerText = "waiting for someone to take your offer";
