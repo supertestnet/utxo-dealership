@@ -23,11 +23,11 @@ It should also incentivize miners to use pools that sell their utxos via this so
 
 - [x] allow custom amounts
 
+- [x] allow multiple simultaneous offers
+
 - [ ] allow custom destinations (currently the destination addresses for both the buyer and the seller are hard coded)
 
 - [ ] ensure that only "fresh sats" show up for sale (currently it is just a coinswap tool, there is no checking to ensure coinbase utxos are sold)
-
-- [ ] allow multiple simultaneous offers (currently only one offer can be made at a time)
 
 - [ ] release it on mainnet
 
