@@ -34,6 +34,9 @@
                 font-size: 1.15rem;
                 border: 1px solid grey;
             }
+            .buy_utxo {
+                margin: .5rem;
+            }
             @media screen and (max-width: 600px) {
             }
         </style>
@@ -201,7 +204,7 @@
                 //stop here if you are the seller
                 if ( kind !== 63582 || $_GET[ "user" ] != "buyer" ) return;
                 content = JSON.parse( content );
-                if ( $( 'button' ) ) $( 'button' ).remove();
+                // if ( $( 'button' ) ) $( 'button' ).remove();
                 var btn = document.createElement( "button" );
                 btn.classList.add( "buy_utxo" );
                 btn.innerText = `buy ${content[ "sell_amt" ]} sats for ${content[ "sell_price" ]} sats`;
@@ -222,11 +225,12 @@
                     dealership[ "offers" ][ offer ][ "seller_vout" ] = null;
                     dealership[ "offers" ][ offer ][ "seller_address" ] = null;
                     dealership[ "offers" ][ offer ][ "buyer_address" ] = null;
-                    var sellers_pubkey = ( e.target.getAttribute( "data-pubkey" ) );
+                    var recipient = e.target.getAttribute( "data-nostrpub" );
+                    var sellers_pubkey = e.target.getAttribute( "data-pubkey" );
                     var second_sellers_pubkey = e.target.getAttribute( "data-second_pubkey" );
                     await dealership.prepBuyer( sellers_pubkey, second_sellers_pubkey, offer );
                     $( 'h2' ).remove();
-                    $( '.buy_utxo' ).style.display = "none";
+                    $( '.buydiv' ).remove();
                     var hd = document.createElement( "h2" );
                     hd.innerText = `ok send ${content[ "sell_price" ]} sats to this address:`;
                     $( '.procedure' ).append( hd );
@@ -257,10 +261,9 @@
                     var hd = document.createElement( "h2" );
                     hd.innerText = "waiting for the seller's agreement";
                     $( '.procedure' ).append( hd );
-                    var recipient = $( 'button' ).getAttribute( "data-nostrpub" );
                     setNostrNote( encrypt( privKey, recipient, JSON.stringify( {type: "accept", msg: {offer, buyers_address: some_bitcoin_address, buyers_contract}} ) ), recipient, relay );
                 }
-                $( '.procedure' ).append( btn );
+                $( '.buydiv' ).append( btn );
             });
 
             socket.addEventListener('open', async function( e ) {
@@ -490,15 +493,11 @@
             dealership[ "addressOnceHadMoney" ] = async (address, network) => {
                 var nonjson = await dealership.getData( "https://mutinynet.com/" + network + "api/address/" + address );
                 var json = JSON.parse( nonjson );
-                if ( json[ "chain_stats" ][ "tx_count" ] > 0 || json[ "mempool_stats" ][ "tx_count" ] > 0 ) {
-                    return true;
-                }
+                if ( json[ "chain_stats" ][ "tx_count" ] > 0 || json[ "mempool_stats" ][ "tx_count" ] > 0 ) return true;
                 return false;
             }
             dealership[ "add2Pubkeys" ] = (pubkey1, pubkey2, caller) => {
-                var combokey = nobleSecp256k1.Point.fromHex( pubkey1 ).add( nobleSecp256k1.Point.fromHex( pubkey2 ) ).toHex();
-                var compressed = bitcoinjs.ECPair.fromPublicKey( Buffer.from( combokey, "hex" ) ).publicKey.toString( "hex" );
-                return compressed;
+                return nobleSecp256k1.Point.fromHex( pubkey1 ).add( nobleSecp256k1.Point.fromHex( pubkey2 ) ).toHex( true );
             }
             dealership[ "add2Privkeys" ] = (privkey1, privkey2) => {
                 var combokey = ( ( BigInt( "0x" + privkey1 ) + BigInt( "0x" + privkey2 ) ) % nobleSecp256k1.CURVE.n ).toString( 16 );
@@ -608,9 +607,7 @@
                   }],
                 });
                 var vin_to_sign = 0;
-                var sighash = tapscript.Signer.taproot.hash( txdata, vin_to_sign, {extension: target, pubkey: dealership.getPublicKey( privkey )} ).hex;
                 var sig1 = tapscript.Signer.taproot.sign(privkey, txdata, vin_to_sign, { extension: target });
-                var sig_is_good = await nobleSecp256k1.schnorr.verify( sig1.hex, sighash, dealership.getPublicKey( privkey ) );
                 txdata.vin[0].witness = [ sig1, script, cblock ];
                 if ( preimage ) txdata.vin[0].witness = [ sig1, preimage, script, cblock ];
                 if ( sig2 ) txdata.vin[0].witness = [ sig1, sig2, script, cblock ];
@@ -716,7 +713,6 @@
                   }],
                 });
                 var vin_to_sign = 0;
-                var sighash = tapscript.Signer.taproot.hash( txdata, vin_to_sign ).hex;
                 var sig = tapscript.Signer.taproot.sign(tseckey, txdata, vin_to_sign);
                 txdata.vin[0].witness = [ sig ];
                 return tapscript.Tx.encode(txdata).hex;
@@ -836,26 +832,24 @@
     <body>
         <h1>Utxo Dealership</h1>
         <div class="procedure">
-            <h2>You are the seller -- click the button below</h2>
             <div class="selldiv">
                 <p>Please enter the value (in sats) of a coinbase utxo you want to sell</p>
                 <p><input class="sell_amt" type="number" min="546" step="1"></p>
-                <p>Please enter the total price (in sats) you want the buyer to pay for that utxo</p>
-                <p>e.g. for a 10% fee, if the utxo has 5000 sats, its price should be 5500 sats</p>
+                <p>Please enter the total price (in sats) you want to sell it for</p>
+                <p>e.g. to get 10% on a 5000 sat utxo, set its price to 5500 sats</p>
                 <p><input class="sell_price" type="number" min="546" step="1"></p>
                 <p><button class="sell_utxo">Sell your new utxo</button></p>
             </div>
+            <div class="buydiv"></div>
         </div>
         <script>
             if ( $_GET[ "user" ] == "buyer" ) {
-                $( 'h2' ).remove();
                 $( '.selldiv' ).remove();
                 var hd = document.createElement( "h2" );
-                hd.innerText = "You are the buyer -- buy a new utxo";
-                $( '.procedure' ).append( hd );
+                hd.innerText = "Buy a new utxo";
+                $( '.procedure' ).prepend( hd );
             }
             if ( $( '.selldiv' ) ) $( '.sell_utxo' ).onclick = async () => {
-                $( 'h2' ).remove();
                 var sell_amt = Number( $( '.sell_amt' ).value );
                 var sell_price = Number( $( '.sell_price' ).value );
                 $( '.selldiv' ).remove();
