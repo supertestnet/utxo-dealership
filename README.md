@@ -21,7 +21,7 @@ It should also incentivize miners to use pools that sell their utxos via this so
 
 - [x] delink the swaps by avoiding pubkey reuse
 
-- [ ] allow custom amounts (currently it is hard coded to only let you buy 3000 "fresh sats" for 4000 "old sats")
+- [x] allow custom amounts
 
 - [ ] allow custom destinations (currently the destination addresses for both the buyer and the seller are hard coded)
 
