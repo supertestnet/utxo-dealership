@@ -165,7 +165,9 @@
                         //change to testnet/
                         var conf_block = await dealership.getBlockTxConfirmedIn( txinfo[ 0 ], "" );
                         dealership[ "offers" ][ offer ][ "maturity_block" ] = conf_block + 101;
-                        if ( do_not_proceed ) return alert( `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}` );
+                        if ( is_coinbase ) var message = `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
+                        else var message = `On no, the miner utxo the miner tried to sell you is not a coinbase utxo! Aborting the swap. Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
+                        if ( do_not_proceed ) return alert( message );
                         var buyer_second_privkey = dealership[ "offers" ][ offer ].buyers_contract.second_privkey1;
                         var buyer_preimage = dealership[ "offers" ][ offer ].buyers_contract.preimage;
                         var hd = document.createElement( "h2" );
