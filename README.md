@@ -39,7 +39,7 @@ But there's a caveat: they don't need to trust one another with their *money* bu
 
 - [x] allow custom destinations
 
-- [x] ensure that only "fresh sats" show up for sale
+- [x] ensure that only "fresh sats" are sold
 
 - [ ] add a "certified pre-owned" section where bitcoiners can buy and sell coinjoined utxos
 
