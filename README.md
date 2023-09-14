@@ -43,6 +43,8 @@ But there's a caveat: they don't need to trust one another with their *money* bu
 
 - [ ] add a "certified pre-owned" section where bitcoiners can buy and sell coinjoined utxos
 
+- [ ] improve the UI to look more like Nick's version
+
 - [ ] release it on mainnet
 
 # Version with a better ui
