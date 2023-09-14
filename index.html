@@ -122,7 +122,7 @@
                         $( 'p' ).remove();
                         var hd = document.createElement( "h2" );
                         var refund_block = dealership[ "offers" ][ offer ][ "refund_block" ];
-                        hd.innerText = `If block ${refund_block} arrives and nothing happens, broadcast this refund tx:`;
+                        hd.innerText = `If block ${refund_block + 1} arrives and nothing happens, broadcast this refund tx:`;
                         var refund_txhex = await dealership.refundSeller( offer );
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
@@ -162,7 +162,10 @@
                         var is_coinbase = await dealership.txIsCoinbase( txinfo[ 0 ], "", tx );
                         if ( !is_coinbase ) do_not_proceed = true;
                         var refund_txhex = await dealership.refundBuyer( offer );
-                        if ( do_not_proceed ) return alert( `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ]} and broadcast your refund tx, which is:\n\n${refund_txhex}` );
+                        //change to testnet/
+                        var conf_block = await dealership.getBlockTxConfirmedIn( txinfo[ 0 ], "" );
+                        dealership[ "offers" ][ offer ][ "maturity_block" ] = conf_block + 101;
+                        if ( do_not_proceed ) return alert( `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}` );
                         var buyer_second_privkey = dealership[ "offers" ][ offer ].buyers_contract.second_privkey1;
                         var buyer_preimage = dealership[ "offers" ][ offer ].buyers_contract.preimage;
                         var hd = document.createElement( "h2" );
@@ -204,7 +207,8 @@
                         var seller_second_privkey = more_info_for_buyer[ "seller_second_privkey" ];
                         var txhex = await dealership.useTweakAsBuyer( dealership[ "offers" ][ offer ].buyers_contract.privkey1, seller_second_privkey, offer );
                         console.log( "txhex:", txhex );
-                        alert( `Broadcast this tx, then click ok:\n\n${txhex}` );
+                        var maturity_block = dealership[ "offers" ][ offer ][ "maturity_block" ];
+                        alert( `Wait for block ${maturity_block}, then broadcast this tx, then click ok:\n\n${txhex}` );
                         var hd = document.createElement( "h2" );
                         hd.innerText = "you're done!";
                         $( '.procedure' ).append( hd );
@@ -230,6 +234,7 @@
                     dealership[ "offers" ][ offer ][ "sell_amt" ] = content[ "sell_amt" ];
                     dealership[ "offers" ][ offer ][ "sell_price" ] = content[ "sell_price" ];
                     dealership[ "offers" ][ offer ][ "refund_block" ] = null;
+                    dealership[ "offers" ][ offer ][ "maturity_block" ] = null;
                     dealership[ "offers" ][ offer ][ "buyer_txid" ] = null;
                     dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                     dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
@@ -399,6 +404,10 @@
                 var data = await dealership.getData( `https://mutinynet.com/${network}api/blocks/tip/height` );
                 return Number( data );
             }
+            dealership[ "getBlockTxConfirmedIn" ] = async( txid, network ) => {
+                var data = await dealership.getData( `https://mutinynet.com/${network}api/tx/${txid}` );
+                return JSON.parse( data )[ "status" ][ "block_height" ];
+            }
             dealership[ "getData" ] = async url => {
                 return new Promise( async function( resolve, reject ) {
                     function inner_get( url ) {
@@ -535,7 +544,7 @@
                 return negated;
             }
             dealership[ "makeContract" ] = async (offer, pubkey2, second_pubkey2, pubkey1, second_pubkey1, privkey2, second_privkey2, hash, i_am_seller) => {
-                var timelock = 10;
+                var timelock = 110;
                 var preimage = dealership.getPrivateKey();
                 if ( !hash ) {
                     var privkey1 = dealership.getPrivateKey();
@@ -640,7 +649,7 @@
                 dealership[ "offers" ][ offer ][ "buyers_contract" ] = await dealership.makeContract( offer, pubkey2, second_sellers_pubkey );
                 //change to testnet/
                 var current_blockheight = await dealership.getBlockheight( "" );
-                dealership[ "offers" ][ offer ][ "refund_block" ] = current_blockheight + 10;
+                dealership[ "offers" ][ offer ][ "refund_block" ] = current_blockheight + 110;
                 dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ] = {
                     timelock: dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "timelock" ] - 5
                 }
@@ -814,7 +823,7 @@
                 dealership[ "offers" ][ offer ][ "sellers_contract" ] = await dealership.makeContract( offer, pubkey2, second_pubkey2, pubkey1, second_pubkey1, privkey2, second_privkey2, hash, true );
                 //change to testnet/
                 var current_blockheight = await dealership.getBlockheight( "" );
-                dealership[ "offers" ][ offer ][ "refund_block" ] = current_blockheight + 5;
+                dealership[ "offers" ][ offer ][ "refund_block" ] = current_blockheight + 105;
                 return true;
             }
             dealership[ "refundSeller" ] = async offer => {
@@ -901,6 +910,7 @@
                 dealership[ "offers" ][ offer ][ "sell_amt" ] = sell_amt;
                 dealership[ "offers" ][ offer ][ "sell_price" ] = sell_price;
                 dealership[ "offers" ][ offer ][ "refund_block" ] = null;
+                dealership[ "offers" ][ offer ][ "maturity_block" ] = null;
                 dealership[ "offers" ][ offer ][ "buyer_txid" ] = null;
                 dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                 dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
