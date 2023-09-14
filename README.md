@@ -39,7 +39,7 @@ But there's a caveat: they don't need to trust one another with their *money* bu
 
 - [x] allow custom destinations
 
-- [ ] ensure that only "fresh sats" show up for sale (currently it is just a coinswap tool, it doesn't ensure only coinbase utxos are sold)
+- [x] ensure that only "fresh sats" show up for sale
 
 - [ ] add a "certified pre-owned" section where bitcoiners can buy and sell coinjoined utxos
 
