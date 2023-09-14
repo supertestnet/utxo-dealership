@@ -95,7 +95,7 @@
                         await dealership.prepSeller( sellers_privkey, second_sellers_privkey, offer );
                         $( 'h2' ).remove();
                         var hd = document.createElement( "h2" );
-                        hd.innerText = `ok you're the seller now, send ${sell_amt} sats to this address:`;
+                        hd.innerText = `Send ${sell_amt} sats to this address:`;
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
                         console.log( sell_amt, dealership[ "offers" ][ offer ].sellers_contract.contract.address );
@@ -121,10 +121,13 @@
                         $( 'h2' ).remove();
                         $( 'p' ).remove();
                         var hd = document.createElement( "h2" );
-                        hd.innerText = "ok send this to the buyer:";
+                        var refund_block = dealership[ "offers" ][ offer ][ "refund_block" ];
+                        hd.innerText = `If block ${refund_block} arrives and nothing happens, broadcast this refund tx:`;
+                        var refund_txhex = await dealership.refundSeller( offer );
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
-                        pg.innerText = JSON.stringify({ sellers_address, sellers_contract });
+                        // pg.innerText = JSON.stringify({ sellers_address, sellers_contract });
+                        pg.innerText = refund_txhex;
                         $( '.procedure' ).append( pg );
                         var btn3 = document.createElement( "button" );
                         btn3.classList.add( "info_sent" );
@@ -147,11 +150,19 @@
                             //change to testnet/
                             var txinfo = await dealership.addressReceivedMoneyInThisTx( sellers_contract.address, "" )
                         }
-                        if ( txinfo[ 2 ] != sell_amt ) return;
                         dealership[ "offers" ][ offer ][ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "seller_vout" ] = txinfo[ 1 ];
                         dealership[ "offers" ][ offer ][ "seller_address" ] = sellers_address;
                         dealership[ "offers" ][ offer ].sellers_contract.contract = sellers_contract;
+                        var do_not_proceed = false;
+                        if ( txinfo[ 2 ] != sell_amt ) do_not_proceed = true;
+                        //change to testnet/
+                        var tx;
+                        if ( $_GET[ "network" ] == "regtest" ) tx = prompt( "Please enter the deposit's txhex" );
+                        var is_coinbase = await dealership.txIsCoinbase( txinfo[ 0 ], "", tx );
+                        if ( !is_coinbase ) do_not_proceed = true;
+                        var refund_txhex = await dealership.refundBuyer( offer );
+                        if ( do_not_proceed ) return alert( `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ]} and broadcast your refund tx, which is:\n\n${refund_txhex}` );
                         var buyer_second_privkey = dealership[ "offers" ][ offer ].buyers_contract.second_privkey1;
                         var buyer_preimage = dealership[ "offers" ][ offer ].buyers_contract.preimage;
                         var hd = document.createElement( "h2" );
@@ -168,7 +179,7 @@
                         var buyer_second_privkey = more_info_for_seller[ "buyer_second_privkey" ];
                         var txhex = await dealership.useTweakAsSeller( dealership[ "offers" ][ offer ].sellers_contract.privkey2, buyer_second_privkey, offer );
                         console.log( "txhex:", txhex );
-                        alert( `ok you're the seller now -- broadcast this tx, then click ok:\n\n${txhex}` );
+                        alert( `Broadcast this tx, then click ok:\n\n${txhex}` );
                         var seller_second_privkey = dealership[ "offers" ][ offer ].sellers_contract.second_privkey2;
                         var hd = document.createElement( "h2" );
                         hd.innerText = "send this info to the buyer";
@@ -193,7 +204,7 @@
                         var seller_second_privkey = more_info_for_buyer[ "seller_second_privkey" ];
                         var txhex = await dealership.useTweakAsBuyer( dealership[ "offers" ][ offer ].buyers_contract.privkey1, seller_second_privkey, offer );
                         console.log( "txhex:", txhex );
-                        alert( `ok you're the buyer now -- broadcast this tx, then click ok:\n\n${txhex}` );
+                        alert( `Broadcast this tx, then click ok:\n\n${txhex}` );
                         var hd = document.createElement( "h2" );
                         hd.innerText = "you're done!";
                         $( '.procedure' ).append( hd );
@@ -218,6 +229,7 @@
                     dealership[ "offers" ][ offer ][ "sellers_contract" ] = {}
                     dealership[ "offers" ][ offer ][ "sell_amt" ] = content[ "sell_amt" ];
                     dealership[ "offers" ][ offer ][ "sell_price" ] = content[ "sell_price" ];
+                    dealership[ "offers" ][ offer ][ "refund_block" ] = null;
                     dealership[ "offers" ][ offer ][ "buyer_txid" ] = null;
                     dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                     dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
@@ -231,7 +243,7 @@
                     $( 'h2' ).remove();
                     $( '.buydiv' ).remove();
                     var hd = document.createElement( "h2" );
-                    hd.innerText = `ok send ${content[ "sell_price" ]} sats to this address:`;
+                    hd.innerText = `Send ${content[ "sell_price" ]} sats to this address:`;
                     $( '.procedure' ).append( hd );
                     var pg = document.createElement( "p" );
                     pg.innerText = dealership[ "offers" ][ offer ].buyers_contract.contract.address;
@@ -376,6 +388,16 @@
                 var num = num.toString() + "000";
                 num = Number( num );
                 return new Promise( resolve => setTimeout( resolve, num ) );
+            }
+            dealership[ "txIsCoinbase" ] = async ( txid, network, tx ) => {
+                if ( !tx ) var tx = await dealership.getData( `https://mutinynet.com/${network}api/tx/${txid}/hex` );
+                var coinbase_flag = "0000000000000000000000000000000000000000000000000000000000000000ffffffff";
+                if ( tx.substring( 0, 88 ).includes( coinbase_flag ) ) return true;
+                return;
+            }
+            dealership[ "getBlockheight" ] = async network => {
+                var data = await dealership.getData( `https://mutinynet.com/${network}api/blocks/tip/height` );
+                return Number( data );
             }
             dealership[ "getData" ] = async url => {
                 return new Promise( async function( resolve, reject ) {
@@ -565,7 +587,7 @@
                 var target = tapscript.Tap.encodeScript(script);
                 var pubkey = dealership.add2Pubkeys( pubkey2, second_pubkey1, `getContract` ).substring( 2 );
                 var [ tpubkey ] = tapscript.Tap.getPubKey(pubkey, { tree, target });
-                //change to testnet
+                //change to testnet/
                 if ( $_GET[ "network" ] == "regtest" ) var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'regtest');
                 else var address = tapscript.Address.p2tr.fromPubKey(tpubkey, 'testnet');
                 return {address, pubkey1, second_pubkey1, pubkey2, second_pubkey2, timelock, hash};
@@ -606,6 +628,7 @@
                   }],
                 });
                 var vin_to_sign = 0;
+                console.log(privkey, txdata, vin_to_sign, { extension: target })
                 var sig1 = tapscript.Signer.taproot.sign(privkey, txdata, vin_to_sign, { extension: target });
                 txdata.vin[0].witness = [ sig1, script, cblock ];
                 if ( preimage ) txdata.vin[0].witness = [ sig1, preimage, script, cblock ];
@@ -615,6 +638,12 @@
             dealership[ "offers" ] = {}
             dealership[ "prepBuyer" ] = async (pubkey2, second_sellers_pubkey, offer) => {
                 dealership[ "offers" ][ offer ][ "buyers_contract" ] = await dealership.makeContract( offer, pubkey2, second_sellers_pubkey );
+                //change to testnet/
+                var current_blockheight = await dealership.getBlockheight( "" );
+                dealership[ "offers" ][ offer ][ "refund_block" ] = current_blockheight + 10;
+                dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ] = {
+                    timelock: dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "timelock" ] - 5
+                }
                 return true;
             }
             dealership[ "refundBuyer" ] = async offer => {
@@ -783,6 +812,9 @@
                 var second_pubkey2 = dealership.getPublicKey( dealership[ "offers" ][ offer ][ "second_sellers_privkey" ] );
                 var hash = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "hash" ];
                 dealership[ "offers" ][ offer ][ "sellers_contract" ] = await dealership.makeContract( offer, pubkey2, second_pubkey2, pubkey1, second_pubkey1, privkey2, second_privkey2, hash, true );
+                //change to testnet/
+                var current_blockheight = await dealership.getBlockheight( "" );
+                dealership[ "offers" ][ offer ][ "refund_block" ] = current_blockheight + 5;
                 return true;
             }
             dealership[ "refundSeller" ] = async offer => {
@@ -823,6 +855,7 @@
                 var txid = dealership[ "offers" ][ offer ][ "seller_txid" ];
                 var vout = dealership[ "offers" ][ offer ][ "seller_vout" ];
                 var i_am_buyer = true;
+                console.log( offer, privkey, pubkey1, second_pubkey1, pubkey2, second_pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true );
                 var txhex = await dealership.settleContract(offer, privkey, pubkey1, second_pubkey1, pubkey2, second_pubkey2, index, destino, from_amount, to_amount, timelock, sig2, preimage, hash, txid, vout, i_am_buyer, null, true);
                 return txhex;
             }
@@ -867,6 +900,7 @@
                 dealership[ "offers" ][ offer ][ "sellers_contract" ] = {}
                 dealership[ "offers" ][ offer ][ "sell_amt" ] = sell_amt;
                 dealership[ "offers" ][ offer ][ "sell_price" ] = sell_price;
+                dealership[ "offers" ][ offer ][ "refund_block" ] = null;
                 dealership[ "offers" ][ offer ][ "buyer_txid" ] = null;
                 dealership[ "offers" ][ offer ][ "buyer_vout" ] = null;
                 dealership[ "offers" ][ offer ][ "seller_txid" ] = null;
