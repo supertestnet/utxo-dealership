@@ -27,7 +27,7 @@ Then the buyer reveals to the miner the secret that allows the buyer to take the
 
 Importantly, the money effectively "changes hands" as soon as both parties commit funds. At that moment, the buyer can take the money in Swap Address B using his secret, but by doing so he would reveal the secret on the blockchain, and that would allow the miner to take the money in Swap Address A. Before the money is in those swap addresses, neither party needs to trust the other. And the very moment the money is in both of those addresses, it has changed hands, so neither party needs to trust one another at that point either.
 
-But there's a caveat: they don't need to trust one another with their *money* but they *do* need to trust one another to complete the swap *privately,* i.e. without revealing the secret that links the swaps together. That is much smaller trust assumption, but it still is one: neither party ever has the other's *money,* but if either one publishes the *secret* that links the transactions together, the privacy of the swap will be compromised.
+But there's a caveat: they don't need to trust one another with their *money* but they *do* need to trust one another to complete the swap *privately,* i.e. without revealing the secret that links the swaps together. That is a much smaller trust assumption, in my opinion, but it still is one: neither party ever has the other's *money,* but if either one publishes the *secret* that links the transactions together, the privacy of the swap will be compromised.
 
 # Upcoming features
 
