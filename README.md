@@ -17,7 +17,7 @@ UTXO dealership is a forthcoming privacy tool for bitcoin. It enables bitcoin mi
 
 It should also incentivize miners to use pools that sell their utxos via this software, because those pools will have higher revenues. In turn, this may disincentivize KYC'd mining pools -- who I imagine will not want to touch this software, despite its profitability -- who will thus lose members to non-KYC'd mining pools, since non-KYC'd mining pools have no qualms about doing stuff without KYC. Therefore this software will (hopefully) increase the profitability, and thus the usage, of non-KYC'd mining pools, improving bitcoin's decentralization and censorship resistance.
 
-# How do swaps work?
+# How do these swaps work?
 
 The miner gives the buyer a pubkey and the buyer uses it to create a swap address using Gregory Maxwell's coinswap technique. The swap address – which I call Swap Address A – allows the buyer's pubkey to withdraw after a timelock, otherwise the miner's pubkey can withdraw if the buyer gives him a secret, otherwise the two parties can cooperate to spend the money without revealing the secret. The buyer deposits funds into this address and sends some info about it to the miner.
 
