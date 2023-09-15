@@ -41,7 +41,7 @@ But there's a caveat: they don't need to trust one another with their *money* bu
 
 - [x] ensure that only "fresh sats" are sold
 
-- [x] add sections where bitcoiners can buy and sell coinjoined utxos as well as toxic change and other unwanted utxos
+- [x] add sections where bitcoiners can trade coinjoined utxos and unwanted utxos e.g. toxic change
 
 - [ ] improve the UI to look more like Nick's version
 
