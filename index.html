@@ -89,7 +89,7 @@
                         dealership[ "offers" ][ offer ][ "buyer_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "buyer_vout" ] = txinfo[ 1 ];
                         dealership[ "offers" ][ offer ][ "buyer_address" ] = buyers_address;
-                        dealership[ "offers" ][ offer ].buyers_contract.contract = buyers_contract;
+                        dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ] = buyers_contract;
                         var sellers_privkey = dealership[ "offers" ][ offer ][ "sellers_privkey" ]
                         var second_sellers_privkey = dealership[ "offers" ][ offer ][ "second_sellers_privkey" ]
                         await dealership.prepSeller( sellers_privkey, second_sellers_privkey, offer );
@@ -98,8 +98,8 @@
                         hd.innerText = `Send ${sell_amt} sats to this address:`;
                         $( '.procedure' ).append( hd );
                         var pg = document.createElement( "p" );
-                        console.log( sell_amt, dealership[ "offers" ][ offer ].sellers_contract.contract.address );
-                        pg.innerText = dealership[ "offers" ][ offer ].sellers_contract.contract.address;
+                        console.log( sell_amt, dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "address" ] );
+                        pg.innerText = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "address" ];
                         $( '.procedure' ).append( pg );
                         await dealership.waitSomeSeconds( 3 );
                         if ( $_GET[ "network" ] == "regtest" ) {
@@ -110,14 +110,14 @@
                             // var txinfo = ["ab".repeat( 32 ), 0, 3000];
                         } else {
                             //change to testnet/
-                            await dealership.loopTilAddressReceivesMoney( dealership[ "offers" ][ offer ].sellers_contract.contract.address, "" );
+                            await dealership.loopTilAddressReceivesMoney( dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "address" ], "" );
                             //change to testnet/
-                            var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership[ "offers" ][ offer ].sellers_contract.contract.address, "" );
+                            var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "address" ], "" );
                         }
                         dealership[ "offers" ][ offer ][ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "seller_vout" ] = txinfo[ 1 ];
                         var sellers_address = dealership[ "offers" ][ offer ][ "seller_address" ];
-                        var sellers_contract = dealership[ "offers" ][ offer ].sellers_contract.contract;
+                        var sellers_contract = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ];
                         $( 'h2' ).remove();
                         $( 'p' ).remove();
                         var hd = document.createElement( "h2" );
@@ -153,23 +153,33 @@
                         dealership[ "offers" ][ offer ][ "seller_txid" ] = txinfo[ 0 ];
                         dealership[ "offers" ][ offer ][ "seller_vout" ] = txinfo[ 1 ];
                         dealership[ "offers" ][ offer ][ "seller_address" ] = sellers_address;
-                        dealership[ "offers" ][ offer ].sellers_contract.contract = sellers_contract;
+                        dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ] = sellers_contract;
+                        var cointype = dealership[ "offers" ][ offer ][ "cointype" ];
                         var do_not_proceed = false;
                         if ( txinfo[ 2 ] != sell_amt ) do_not_proceed = true;
                         //change to testnet/
                         var tx;
                         if ( $_GET[ "network" ] == "regtest" ) tx = prompt( "Please enter the deposit's txhex" );
                         var is_coinbase = await dealership.txIsCoinbase( txinfo[ 0 ], "", tx );
-                        if ( !is_coinbase ) do_not_proceed = true;
+                        if ( cointype == "coinbase_future" && !is_coinbase ) do_not_proceed = true;
+                        //todo: if cointype is coinbase_mature, check if parent was a coinbase
+                        //if cointype is coinjoin, check if parent was a coinjoin
+                        //I can test the latter with this utxo but only if I use mempool.space instead of mutinynet.com:
+                        //cj_info = ["d6a2e82b7ae3eb3f9e12ac6debce2f4ffa874f3135fe496167a4b80b1ac94e97",3,600000];
+                        //change to testnet/
+                        var parents_are_coinjoin_utxos = await dealership.parentsAreCoinjoinUtxos( txinfo[ 0 ], txinfo[ 1 ], txinfo[ 2 ], "" );
+                        console.log( cointype, parents_are_coinjoin_utxos );
+                        if ( cointype == "coinjoin_past" && !parents_are_coinjoin_utxos ) do_not_proceed = true;
                         var refund_txhex = await dealership.refundBuyer( offer );
                         //change to testnet/
                         var conf_block = await dealership.getBlockTxConfirmedIn( txinfo[ 0 ], "" );
                         dealership[ "offers" ][ offer ][ "maturity_block" ] = conf_block + 101;
-                        if ( is_coinbase ) var message = `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
-                        else var message = `On no, the miner utxo the miner tried to sell you is not a coinbase utxo! Aborting the swap. Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
+                        if ( cointype == "coinbase_future" && is_coinbase ) var message = `Something went wrong! Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
+                        if ( cointype == "coinbase_future" && !is_coinbase ) var message = `On no, the utxo the miner tried to sell you is not a coinbase utxo! Aborting the swap. Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
+                        if ( cointype == "coinjoin_past" && !parents_are_coinjoin_utxos ) var message = `On no, the utxo the seller tried to sell you is not a coinjoin utxo! Aborting the swap. Wait til block ${dealership[ "offers" ][ offer ][ "refund_block" ] + 1} and broadcast your refund tx, which is:\n\n${refund_txhex}`;
                         if ( do_not_proceed ) return alert( message );
-                        var buyer_second_privkey = dealership[ "offers" ][ offer ].buyers_contract.second_privkey1;
-                        var buyer_preimage = dealership[ "offers" ][ offer ].buyers_contract.preimage;
+                        var buyer_second_privkey = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "second_privkey1" ];
+                        var buyer_preimage = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "preimage" ];
                         var hd = document.createElement( "h2" );
                         hd.innerText = "waiting for the seller's sats";
                         $( '.procedure' ).append( hd );
@@ -180,12 +190,12 @@
                         var more_info_for_seller = content[ "msg" ];
                         var offer = more_info_for_seller[ "offer" ];
                         var hash = await dealership.sha256( dealership.hexToBytes( more_info_for_seller[ "buyer_preimage" ] ) );
-                        if ( hash != dealership[ "offers" ][ offer ].sellers_contract.contract.hash ) return;
+                        if ( hash != dealership[ "offers" ][ offer ][ "sellers_contract" ][ "contract" ][ "hash" ] ) return;
                         var buyer_second_privkey = more_info_for_seller[ "buyer_second_privkey" ];
-                        var txhex = await dealership.useTweakAsSeller( dealership[ "offers" ][ offer ].sellers_contract.privkey2, buyer_second_privkey, offer );
+                        var txhex = await dealership.useTweakAsSeller( dealership[ "offers" ][ offer ][ "sellers_contract" ][ "privkey2" ], buyer_second_privkey, offer );
                         console.log( "txhex:", txhex );
                         alert( `Broadcast this tx, then click ok:\n\n${txhex}` );
-                        var seller_second_privkey = dealership[ "offers" ][ offer ].sellers_contract.second_privkey2;
+                        var seller_second_privkey = dealership[ "offers" ][ offer ][ "sellers_contract" ][ "second_privkey2" ];
                         var hd = document.createElement( "h2" );
                         hd.innerText = "send this info to the buyer";
                         $( '.procedure' ).append( hd );
@@ -207,7 +217,7 @@
                         var offer = more_info_for_buyer[ "offer" ];
                         $( 'h2' ).remove();
                         var seller_second_privkey = more_info_for_buyer[ "seller_second_privkey" ];
-                        var txhex = await dealership.useTweakAsBuyer( dealership[ "offers" ][ offer ].buyers_contract.privkey1, seller_second_privkey, offer );
+                        var txhex = await dealership.useTweakAsBuyer( dealership[ "offers" ][ offer ][ "buyers_contract" ][ "privkey1" ], seller_second_privkey, offer );
                         console.log( "txhex:", txhex );
                         var maturity_block = dealership[ "offers" ][ offer ][ "maturity_block" ];
                         alert( `Wait for block ${maturity_block}, then broadcast this tx, then click ok:\n\n${txhex}` );
@@ -231,6 +241,7 @@
                 btn.onclick = async e => {
                     var offer = e.target.getAttribute( "data-offer" );
                     dealership[ "offers" ][ offer ] = {}
+                    dealership[ "offers" ][ offer ][ "cointype" ] = content[ "cointype" ];
                     dealership[ "offers" ][ offer ][ "buyers_contract" ] = {}
                     dealership[ "offers" ][ offer ][ "sellers_contract" ] = {}
                     dealership[ "offers" ][ offer ][ "sell_amt" ] = content[ "sell_amt" ];
@@ -253,8 +264,8 @@
                     hd.innerText = `Send ${content[ "sell_price" ]} sats to this address:`;
                     $( '.procedure' ).append( hd );
                     var pg = document.createElement( "p" );
-                    pg.innerText = dealership[ "offers" ][ offer ].buyers_contract.contract.address;
-                    console.log( content[ "sell_price" ], dealership[ "offers" ][ offer ].buyers_contract.contract.address );
+                    pg.innerText = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "address" ];
+                    console.log( content[ "sell_price" ], dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "address" ] );
                     $( '.procedure' ).append( pg );
                     await dealership.waitSomeSeconds( 3 );
                     if ( $_GET[ "network" ] == "regtest" ) {
@@ -265,15 +276,15 @@
                         // var txinfo = ["ab".repeat( 32 ), 0, 4000];
                     } else {
                         //change to testnet/
-                        await dealership.loopTilAddressReceivesMoney( dealership[ "offers" ][ offer ].buyers_contract.contract.address, "" );
+                        await dealership.loopTilAddressReceivesMoney( dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "address" ], "" );
                         //change to testnet/
-                        var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership[ "offers" ][ offer ].buyers_contract.contract.address, "" );
+                        var txinfo = await dealership.addressReceivedMoneyInThisTx( dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ][ "address" ], "" );
                     }
                     dealership[ "offers" ][ offer ][ "buyer_txid" ] = txinfo[ 0 ];
                     dealership[ "offers" ][ offer ][ "buyer_vout" ] = txinfo[ 1 ];
                     var buyers_address = prompt( "Please enter a bitcoin address where you want your new sats to go" );
                     dealership[ "offers" ][ offer ][ "buyer_address" ] = buyers_address;
-                    var buyers_contract = dealership[ "offers" ][ offer ].buyers_contract.contract;
+                    var buyers_contract = dealership[ "offers" ][ offer ][ "buyers_contract" ][ "contract" ];
                     $( 'h2' ).remove();
                     $( 'p' ).remove();
                     var hd = document.createElement( "h2" );
@@ -281,7 +292,10 @@
                     $( '.procedure' ).append( hd );
                     setNostrNote( encrypt( privKey, recipient, JSON.stringify({ type: "accept", msg: {offer, buyers_address, buyers_contract} }) ), recipient, relay );
                 }
-                $( '.buydiv' ).append( btn );
+                if ( content[ "cointype" ] == "coinbase_future" ) $( '.coinbase_future' ).append( btn );
+                // if ( content[ "cointype" ] == "coinbase_past" ) $( '.coinbase_past' ).append( btn );
+                if ( content[ "cointype" ] == "coinjoin_past" ) $( '.coinjoin_past' ).append( btn );
+                if ( content[ "cointype" ] == "bad_history" ) $( '.bad_history' ).append( btn );
             });
 
             socket.addEventListener('open', async function( e ) {
@@ -409,6 +423,121 @@
             dealership[ "getBlockTxConfirmedIn" ] = async( txid, network ) => {
                 var data = await dealership.getData( `https://mutinynet.com/${network}api/tx/${txid}` );
                 return JSON.parse( data )[ "status" ][ "block_height" ];
+            }
+            dealership[ "txIsACoinjoin" ] = async( txid, network ) => {
+                var tx = await dealership.getData( `https://mutinynet.com/${network}api/tx/${txid}` );
+                tx = JSON.parse( tx );
+                if ( tx[ "vin" ].length < 3 || tx[ "vout" ].length < 3 ) return;
+                if ( tx[ "vin" ].length / tx[ "vout" ].length < 0.67 ) return;
+                var output_values = [];
+                tx[ "vout" ].forEach( function( output ) {
+                    if ( !( output.value in output_values ) ) {
+                        output_values[ output.value ] = 0;
+                    } else {
+                        output_values[ output.value ] = output_values[ output.value ] + 1;
+                    }
+                });
+                if ( Object.keys( output_values ).length <= tx[ "vout" ].length - 2 ) return true;
+            }
+            dealership[ "getValueOfUtxo" ] = async ( txid, vout, network ) => {
+                var txinfo = await dealership.getData( `https://mutinynet.com/${network}api/tx/${txid}` );
+                return JSON.parse( txinfo )[ "vout" ][ vout ][ "value" ];
+            }
+            dealership[ "amountWasCoinjoinAmount" ] = async ( txid, amount, network ) => {
+                var txinfo = await dealership.getData( `https://mutinynet.com/${network}api/tx/${txid}` );
+                var num_of_equal_value_outputs = 0;
+                JSON.parse( txinfo )[ "vout" ].every( vout => {
+                    if ( vout[ "value" ] == amount ) {
+                        num_of_equal_value_outputs = num_of_equal_value_outputs + 1;
+                        if ( num_of_equal_value_outputs > 1 ) return;
+                    }
+                    return true;
+                });
+                if ( num_of_equal_value_outputs > 1 ) return true;
+            }
+            dealership[ "parentsAreCoinjoinUtxos" ] = async ( txid, vout, amount, network ) => {
+                console.log( "txid:", txid, "vout:", vout, "amount:", amount );
+                var cj_info = [ txid, vout, amount ];
+                var txinfo = await dealership.getData( `https://mutinynet.com/${network}api/tx/${cj_info[ 0 ]}` );
+                txinfo = JSON.parse( txinfo );
+                var parents = [];
+                // //remember to delete the next function
+                // dealership[ "getValueOfUtxo" ] = async ( txid, vout, network ) => {
+                //   var txinfo = await dealership.getData( `https://mempool.space/${network}api/tx/${txid}` );
+                //   return JSON.parse( txinfo )[ "vout" ][ vout ][ "value" ];
+                // }
+                console.log( "getting info about all txs that funded my utxo" );
+                var i; for ( i=0; i<txinfo[ "vin" ].length; i++ ) {
+                    console.log( i + 1, "out of", txinfo[ "vin" ].length );
+                    var index = i, vin = txinfo[ "vin" ][ i ];
+                    parents.push( [vin[ "txid" ], vin[ "vout" ]] );
+                }
+                console.log( "parents:", parents );
+                var parents_that_are_in_coinjoin_txs = [];
+                // //remember to delete the next function
+                // dealership[ "txIsACoinjoin" ] = async( txid, network ) => {
+                //   var tx = await dealership.getData( `https://mempool.space/${network}api/tx/${txid}` );
+                //   tx = JSON.parse( tx );
+                //   if ( tx[ "vin" ].length < 3 || tx[ "vout" ].length < 3 ) return;
+                //   if ( tx[ "vin" ].length / tx[ "vout" ].length < 0.67 ) {return console.log( tx[ "vin" ].length / tx[ "vout" ].length < 0.67 );}
+                //   var output_values = [];
+                //   tx[ "vout" ].forEach( function( output ) {
+                //     if ( !( output.value in output_values ) ) {
+                //       output_values[ output.value ] = 0;
+                //     } else {
+                //       output_values[ output.value ] = output_values[ output.value ] + 1;
+                //     }
+                //   });
+                //   if ( Object.keys( output_values ).length <= tx[ "vout" ].length - 2 ) return true;
+                //   return;
+                // }
+                console.log( "now filtering out txs that are not coinjoins" );
+                var i; for ( i=0; i<parents.length; i++ ) {
+                    var parent = parents[ i ];
+                    console.log( i + 1, "out of", parents.length );
+                    var parent_is_coinjoin = await dealership.txIsACoinjoin( parent[ 0 ], network );
+                    if ( parent_is_coinjoin ) parents_that_are_in_coinjoin_txs.push( parent );
+                }
+                console.log( "parents_that_are_in_coinjoin_txs:", parents_that_are_in_coinjoin_txs );
+                console.log( "now getting the amounts of the remaining vouts, which were used to fund my utxo" );
+                var i; for ( i=0; i<parents_that_are_in_coinjoin_txs.length; i++ ) {
+                    console.log( i + 1, "out of", parents_that_are_in_coinjoin_txs.length );
+                    var index = i, utxo = parents_that_are_in_coinjoin_txs[ i ];
+                    var value = await dealership.getValueOfUtxo( utxo[ 0 ], utxo[ 1 ], network );
+                    parents_that_are_in_coinjoin_txs[ index ].push( value );
+                }
+                console.log( "now checking if the remaining vouts, which were used to fund my utxo, are coinjoin outputs" );
+                // //remember to delete the next function
+                // dealership[ "amountWasCoinjoinAmount" ] = async ( txid, amount, network ) => {
+                //   var txinfo = await dealership.getData( `https://mempool.space/${network}api/tx/${txid}` );
+                //   var num_of_equal_value_outputs = 0;
+                //   JSON.parse( txinfo )[ "vout" ].every( vout => {
+                //     if ( vout[ "value" ] == amount ) {
+                //       num_of_equal_value_outputs = num_of_equal_value_outputs + 1;
+                //       if ( num_of_equal_value_outputs > 2 ) return;
+                //     }
+                //     return true;
+                //   });
+                //   if ( num_of_equal_value_outputs > 2 ) return true;
+                // }
+                var i; for ( i=0; i<parents_that_are_in_coinjoin_txs.length; i++ ) {
+                    console.log( i + 1, "out of", parents_that_are_in_coinjoin_txs.length );
+                    var parent = parents_that_are_in_coinjoin_txs[ i ];
+                    var amount_was_coinjoin_amount = await dealership.amountWasCoinjoinAmount( parent[ 0 ], parent[ 2 ], "" );
+                    if ( amount_was_coinjoin_amount ) parents_that_are_in_coinjoin_txs[ i ].push( "vout_was_cj" );
+                }
+                var parents_that_are_coinjoin_utxos = [];
+                parents_that_are_in_coinjoin_txs.forEach( parent => {
+                    if ( parent[ 3 ] ) parents_that_are_coinjoin_utxos.push( parent );
+                });
+                console.log( "parents_that_are_coinjoin_utxos:", parents_that_are_coinjoin_utxos );
+                var sum = 0;
+                parents_that_are_coinjoin_utxos.every( utxo => {
+                    sum = sum + utxo[ 2 ];
+                    if ( sum > cj_info[ 2 ] ) return;
+                    return true;
+                });
+                if ( sum > cj_info[ 2 ] ) return true;
             }
             dealership[ "getData" ] = async url => {
                 return new Promise( async function( resolve, reject ) {
@@ -560,7 +689,7 @@
                 } else {
                     timelock = timelock - 5;
                     dealership[ "offers" ][ offer ][ "sellers_contract" ][ "second_privkey2" ] = second_privkey2;
-                    // console.log( "combokey for the swap address created by the seller:", dealership.add2Pubkeys( second_pubkey2, pubkey1, `makeContract` ).substring( 2 ), ` -- I passed in second_pubkey2 (i.e. ${second_pubkey2}, whose privkey the seller knows, it is ${dealership[ "offers" ][ offer ].sellers_contract.second_privkey2}) and pubkey1 (i.e. ${pubkey1}, whose privkey the buyer knows -- you can look it up with dealership.buyers_contract.privkey1)` );
+                    // console.log( "combokey for the swap address created by the seller:", dealership.add2Pubkeys( second_pubkey2, pubkey1, `makeContract` ).substring( 2 ), ` -- I passed in second_pubkey2 (i.e. ${second_pubkey2}, whose privkey the seller knows, it is ${dealership[ "offers" ][ offer ][ "sellers_contract" ][ "second_privkey2" ]}) and pubkey1 (i.e. ${pubkey1}, whose privkey the buyer knows -- you can look it up with dealership.buyers_contract.privkey1)` );
                     var contract = await dealership.getContract( pubkey2, second_pubkey2, pubkey1, second_pubkey1, timelock, hash );
                 }
                 if ( !i_am_seller ) return {privkey1, second_privkey1: second_buyer_privkey, preimage, contract}
@@ -876,7 +1005,14 @@
         <h1>Utxo Dealership</h1>
         <div class="procedure">
             <div class="selldiv">
-                <p>Please enter the value (in sats) of a coinbase utxo you want to sell</p>
+                <p>Please select the type of utxo you want to sell</p>
+                <select class="cointype" name="cointype" id="cointype">
+                    <option value="coinbase_future">A coinbase utxo that I expect to mine soon</option>
+                    <!-- <option value="coinbase_past">A coinbase utxo that already matured</option> -->
+                    <option value="coinjoin_past">A utxo from a coinjoin</option>
+                    <option value="bad_history">A toxic change utxo or other utxo I don't want</option>
+                </select>
+                <p>Please enter the value (in sats) of the utxo you want to sell</p>
                 <p><input class="sell_amt" type="number" min="546" step="1"></p>
                 <p>Please enter the total price (in sats) you want to sell it for</p>
                 <p>e.g. to get 10% on a 5000 sat utxo, set its price to 5500 sats</p>
@@ -890,21 +1026,52 @@
         <script>
             if ( $_GET[ "user" ] == "buyer" ) {
                 $( '.selldiv' ).remove();
-                var hd = document.createElement( "h2" );
-                hd.innerText = "Buy a new utxo";
-                $( '.procedure' ).prepend( hd );
+                var hd1 = document.createElement( "h2" );
+                hd1.innerText = "Buy a new utxo";
+                var bhs = document.createElement( "div" );
+                bhs.className = "bad_history";
+                var hd2 = document.createElement( "h3" );
+                hd2.className = "bad_history_label";
+                hd2.innerText = "Unwanted utxos e.g. toxic change";
+                $( '.buydiv' ).prepend( bhs );
+                $( '.buydiv' ).prepend( hd2 );
+                var cjs = document.createElement( "div" );
+                cjs.className = "coinjoin_past";
+                var hd2 = document.createElement( "h3" );
+                hd2.className = "coinjoin_past_label";
+                hd2.innerText = "Utxos created via coinjoins";
+                $( '.buydiv' ).prepend( cjs );
+                $( '.buydiv' ).prepend( hd2 );
+                //todo: add mature coinbases
+                // var mcb = document.createElement( "div" );
+                // mcb.className = "coinbase_past";
+                // var hd2 = document.createElement( "h3" );
+                // hd2.className = "coinbase_past_label";
+                // hd2.innerText = "Coinbases that have matured";
+                // $( '.buydiv' ).prepend( mcb );
+                // $( '.buydiv' ).prepend( hd2 );
+                var fcb = document.createElement( "div" );
+                fcb.className = "coinbase_future";
+                var hd2 = document.createElement( "h3" );
+                hd2.className = "coinbase_future_label";
+                hd2.innerText = "Coinbases that aren't mined yet";
+                $( '.buydiv' ).prepend( fcb );
+                $( '.buydiv' ).prepend( hd2 );
+                $( '.procedure' ).prepend( hd1 );
             }
             if ( $( '.selldiv' ) ) $( '.sell_utxo' ).onclick = async () => {
                 var sell_amt = Number( $( '.sell_amt' ).value );
                 var sell_price = Number( $( '.sell_price' ).value );
                 var seller_address = $( '.seller_address' ).value;
+                var cointype = $( '.cointype' ).value;
                 $( '.selldiv' ).remove();
                 var sellers_privkey = dealership.getPrivateKey();
                 var second_sellers_privkey = dealership.getPrivateKey();
                 var sellers_pubkey = dealership.getPublicKey( sellers_privkey );
                 var second_sellers_pubkey = dealership.getPublicKey( second_sellers_privkey );
-                var offer = await setNostrNote( JSON.stringify({sellers_pubkey, second_sellers_pubkey, sell_amt, sell_price}), null, relay );
+                var offer = await setNostrNote( JSON.stringify({sellers_pubkey, second_sellers_pubkey, sell_amt, sell_price, cointype}), null, relay );
                 dealership[ "offers" ][ offer ] = {}
+                dealership[ "offers" ][ offer ][ "cointype" ] = cointype;
                 dealership[ "offers" ][ offer ][ "sellers_privkey" ] = sellers_privkey;
                 dealership[ "offers" ][ offer ][ "second_sellers_privkey" ] = second_sellers_privkey;
                 dealership[ "offers" ][ offer ][ "buyers_contract" ] = {}
